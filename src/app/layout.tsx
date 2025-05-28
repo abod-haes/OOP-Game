@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { Footer } from "@/components/ui/footer";
 import { Header } from "@/components/ui/header";
 import { HeroGeometric } from "@/components/ui/shape-landing-hero";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
     title: "Create Next App",
@@ -19,7 +16,7 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en">
-            <body className={inter.className}>
+            <body>
                 <Header />
                 <main className="min-h-screen pb-24 relative">
                     <HeroGeometric />

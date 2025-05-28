@@ -21,10 +21,14 @@ export async function compileJava(code: string): Promise<CompilationResult> {
         }
 
         return await response.json();
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage =
+            error instanceof Error
+                ? error.message
+                : "An unknown error occurred";
         return {
             success: false,
-            error: error.message,
+            error: errorMessage,
         };
     }
 }

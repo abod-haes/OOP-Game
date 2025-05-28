@@ -12,9 +12,9 @@ const config: Config = {
         extend: {
             colors: {
                 metallic: {
-                    dark: "#4B4B4B", // خلفية رئيسية أو للأقسام الداكنة
-                    light: "#D1D1D1", // للنصوص أو الخلفيات الثانوية
-                    accent: "#007ACC", // لون تمييزي
+                    dark: "#4B4B4B",
+                    light: "#D1D1D1",
+                    accent: "#007ACC",
                 },
                 mainBlue: "#1c9dea",
                 secondly: "#223645",

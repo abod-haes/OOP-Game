@@ -39,6 +39,15 @@ function formatError(error: string): string {
     return error.trim();
 }
 
+function hasStderr(error: unknown): error is { stderr: string } {
+    return (
+        typeof error === "object" &&
+        error !== null &&
+        "stderr" in error &&
+        typeof (error as { stderr: unknown }).stderr === "string"
+    );
+}
+
 export async function compileAndRun(code: string): Promise<CompilationResult> {
     if (!code) {
         return {
@@ -74,19 +83,29 @@ export async function compileAndRun(code: string): Promise<CompilationResult> {
                 success: true,
                 output: stdout,
             };
-        } catch (error: any) {
+        } catch (error: unknown) {
+            let formattedError = "Unknown error";
+            if (hasStderr(error)) {
+                formattedError = formatError(error.stderr);
+            } else if (error instanceof Error) {
+                formattedError = formatError(error.message);
+            }
             return {
                 success: false,
-                error: formatError(error.stderr || error.message),
+                error: formattedError,
             };
         } finally {
             // Clean up
             await rm(tempDir, { recursive: true, force: true });
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
+        let formattedError = "Unknown error";
+        if (error instanceof Error) {
+            formattedError = formatError(error.message);
+        }
         return {
             success: false,
-            error: formatError(error.message),
+            error: formattedError,
         };
     }
 }

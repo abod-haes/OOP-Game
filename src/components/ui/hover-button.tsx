@@ -136,7 +136,7 @@ const HoverButton = React.forwardRef<HTMLButtonElement, HoverButtonProps>(
                     "hover:before:opacity-70",
                     // Active state
                     "active:scale-[0.98]",
-                    "active:shadow-[0_4px_16px_0_rgba(0,122,204,0.15)]",
+                    "active:shadow-[0_4px_16px_0_rgba(0,122,204,0.15)] whitespace-nowrap",
                     className
                 )}
                 style={{

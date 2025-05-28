@@ -1,10 +1,20 @@
+"use client";
+import LoginForm from "@/components/foms";
 import React from "react";
 
 function Page() {
+    const handleLogin = (
+        email?: string,
+        password?: string,
+        remember?: boolean
+    ) => {
+        console.log("Login attempt:", { email, password, remember });
+    };
+
     return (
-        <div className=" container h-full  min-h-[100dvh] w-full grid items-center mx-auto  justify-center relative">
-            <div>
-                <form></form>
+        <div className="  h-full  min-h-[100dvh] w-full grid items-center mx-auto  justify-center relative">
+            <div className="relative z-20 w-full md:min-w-[500px]  animate-fadeIn container">
+                <LoginForm onSubmit={handleLogin} />
             </div>
         </div>
     );

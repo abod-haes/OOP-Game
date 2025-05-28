@@ -8,9 +8,13 @@ export async function POST(request: Request) {
 
         const result = await compileAndRun(code);
         return NextResponse.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage =
+            error instanceof Error
+                ? error.message
+                : "An unknown error occurred";
         return NextResponse.json(
-            { success: false, error: error.message },
+            { success: false, error: errorMessage },
             { status: 500 }
         );
     }
