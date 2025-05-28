@@ -1,0 +1,57 @@
+.java-editor-container :global(.monaco-editor) {
+    background: transparent !important;
+}
+
+.java-editor-container :global(.monaco-editor .margin) {
+    background: transparent !important;
+}
+
+.java-editor-container :global(.monaco-editor .monaco-editor-background) {
+    background: transparent !important;
+}
+
+.error-line {
+    background-color: rgba(255, 0, 0, 0.1) !important;
+}
+
+.error-glyph {
+    background-color: rgba(255, 68, 68, 0.8) !important;
+}
+
+.monaco-editor .margin-view-overlays .cgmr {
+    background-color: rgba(255, 68, 68, 0.8) !important;
+}
+
+/* Minimap styling */
+.monaco-editor .minimap {
+    background: transparent !important;
+}
+
+.monaco-editor .minimap .minimap-slider {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.monaco-editor .minimap .minimap-slider:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.monaco-editor .minimap .minimap-slider.active {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.monaco-editor .minimap .minimap-shadow-visible {
+    box-shadow: none !important;
+}
+
+.minimap.slider-mouseover {
+    display: none;
+}
+
+.decorationsOverviewRuler { 
+    display: none !important
+}
+.monaco-diff-editor .synthetic-focus, .monaco-diff-editor [tabindex="-1"]:focus, .monaco-diff-editor [tabindex="0"]:focus, .monaco-diff-editor button:focus, .monaco-diff-editor input[type=button]:focus, .monaco-diff-editor input[type=checkbox]:focus, .monaco-diff-editor input[type=search]:focus, .monaco-diff-editor input[type=text]:focus, .monaco-diff-editor select:focus, .monaco-diff-editor textarea:focus, .monaco-editor{
+    outline: none !important
+}
+
+    
