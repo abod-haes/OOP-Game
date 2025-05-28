@@ -3,8 +3,11 @@
 import React from "react";
 import { Code2 } from "lucide-react";
 import { HoverButton } from "./hover-button";
+import { useRouter } from "next/navigation";
+import { routeName } from "@/app/_route-name";
 
 export function Header() {
+    const route = useRouter();
     return (
         <header className="fixed top-0 left-0 right-0 z-50">
             <div className="container mx-auto px-4 py-2">
@@ -46,7 +49,10 @@ export function Header() {
                             </a>
                         </nav>
                         <div className="flex items-center gap-4">
-                            <HoverButton className="text-sm px-4 py-2">
+                            <HoverButton
+                                onClick={() => route.push(routeName.signIn)}
+                                className="text-sm px-4 py-2"
+                            >
                                 Sign In
                             </HoverButton>
                             <HoverButton className="text-sm px-4 py-2 bg-metallic-accent/20 hover:bg-metallic-accent/30">

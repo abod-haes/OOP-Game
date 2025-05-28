@@ -3,6 +3,7 @@ import "./globals.css";
 import { Footer } from "@/components/ui/footer";
 import { Header } from "@/components/ui/header";
 import { HeroGeometric } from "@/components/ui/shape-landing-hero";
+import Providers from "@/components/providers";
 
 export const metadata: Metadata = {
     title: "Create Next App",
@@ -20,7 +21,7 @@ export default function RootLayout({
                 <Header />
                 <main className="min-h-screen pb-24 relative">
                     <HeroGeometric />
-                    {children}
+                    <Providers>{children}</Providers>
                 </main>
                 <Footer />
             </body>
