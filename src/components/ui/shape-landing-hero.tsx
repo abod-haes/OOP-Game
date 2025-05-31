@@ -143,7 +143,7 @@ function HeroGeometric() {
                     width={600}
                     height={160}
                     rotate={-8}
-                    className="left-[1%] bottom-[1%]"
+                    className="left-[-10%] bottom-[5%]"
                     icon={GiRobotGrab}
                 />
 
@@ -197,7 +197,7 @@ function HeroGeometric() {
                     width={650}
                     height={170}
                     rotate={-18}
-                    className="left-[0%] bottom-[0%]"
+                    className="left-[0%] bottom-[40%]"
                     icon={GiRobotGrab}
                 />
             </div>

@@ -219,7 +219,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
                 <div className="relative flex items-center justify-center">
                     <div className="border-t border-white/10 absolute w-full"></div>
                     <div className="bg-transparent px-4 relative text-white/60 text-sm">
-                        Or continue with
+                        OR continue with
                     </div>
                 </div>
 
@@ -240,7 +240,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
                 variants={itemVariants}
                 className="mt-8 text-center text-sm text-white/60"
             >
-                New to our platform?{" "}
+                New to our platform?
                 <a
                     href="#"
                     className="font-medium text-white hover:text-metallic-accent transition-colors"
