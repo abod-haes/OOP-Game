@@ -38,7 +38,7 @@ export function Header() {
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center gap-2">
                         <Code2 className="h-8 w-8 text-metallic-accent" />
-                        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-metallic-accent to-metallic-light">
+                        <span className="md:text-xl text-base font-bold bg-clip-text text-transparent bg-gradient-to-r from-metallic-accent to-metallic-light">
                             OOP Playground
                         </span>
                     </div>

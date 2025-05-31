@@ -11,6 +11,8 @@ function Page() {
                 <Landing />
 
                 <HomeEditor />
+            </div>
+            <div className="px-10 mx-auto grid grid-cols-1 gap-y-24 w-full h-full pt-24 overflow-hidden ">
                 <Map />
             </div>
         </main>

@@ -1,22 +1,24 @@
 "use client";
 import Image from "next/image";
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 function Map() {
     const router = useRouter();
     const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const levels = [
         { id: 1, position: "top-[12%] left-[12%]", label: "Level 1" },
         { id: 2, position: "top-[12%] right-[12%]", label: "Level 2" },
-        { id: 3, position: "bottom-[12%] left-[12%]", label: "Level 3" },
-        { id: 4, position: "bottom-[12%] right-[12%]", label: "Level 4" },
+        { id: 3, position: "bottom-[12%] left-[12%]", label: "" },
+        { id: 4, position: "bottom-[12%] right-[12%]", label: "Level 3" },
     ];
 
     const handleLevelClick = (levelId: number) => {
         setSelectedLevel(levelId);
+        setIsLoading(true);
 
         setTimeout(() => {
             router.push(`/level/${levelId}`);
@@ -24,9 +26,61 @@ function Map() {
     };
 
     return (
-        <div className="relative w-full h-full min-h-[750px]">
+        <div className="relative w-full h-full md:min-h-[750px]">
+            <AnimatePresence>
+                {isLoading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center bg-metallic-dark/80 backdrop-blur-sm"
+                    >
+                        <div className="relative">
+                            <motion.div
+                                className="w-32 h-32 border-4 border-metallic-accent rounded-full"
+                                animate={{
+                                    rotate: 360,
+                                    scale: [1, 1.2, 1],
+                                }}
+                                transition={{
+                                    duration: 2,
+                                    repeat: Infinity,
+                                    ease: "linear",
+                                }}
+                            />
+                            <motion.div
+                                className="absolute inset-0 w-32 h-32 border-4 border-t-transparent border-metallic-light rounded-full"
+                                animate={{
+                                    rotate: -360,
+                                    scale: [1.2, 1, 1.2],
+                                }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: "linear",
+                                }}
+                            />
+                            <motion.div
+                                className="absolute inset-0 flex items-center justify-center"
+                                animate={{
+                                    scale: [1, 1.1, 1],
+                                }}
+                                transition={{
+                                    duration: 1,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                            >
+                                <span className="text-metallic-accent text-lg font-bold">
+                                    Loading...
+                                </span>
+                            </motion.div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             <motion.div
-                className="relative w-full h-full"
+                className="relative w-full md:h-full h-[350px]"
                 animate={
                     selectedLevel
                         ? {

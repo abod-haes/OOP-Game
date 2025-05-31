@@ -19,7 +19,7 @@ export default function RootLayout({
         <html lang="en">
             <body>
                 <Header />
-                <main className="min-h-screen pb-24 relative">
+                <main className="min-h-[100dvh] pb-24 relative">
                     <HeroGeometric />
                     <Providers>{children}</Providers>
                 </main>
