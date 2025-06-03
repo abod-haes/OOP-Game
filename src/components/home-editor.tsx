@@ -18,7 +18,7 @@ function HomeEditor() {
             >
                 <div className="absolute w-full h-full top-0 left-0 z-10"></div>
 
-                <JavaEditor />
+                <JavaEditor initialValue='public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}' />
 
                 <Meteors number={20} />
             </div>

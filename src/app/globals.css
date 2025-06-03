@@ -16,13 +16,17 @@
 
 @keyframes float {
   0% {
-    transform: translateY(0px);
-  }
+    transform: translateX(-40px);
+    -webkit-transform: translateX(-40px);
+    -moz-transform: translateX(-40px);
+    -ms-transform: translateX(-40px);
+    -o-transform: translateX(-40px);
+}
   50% {
-    transform: translateY(-5px);
+    transform: translateX(40px);
   }
   100% {
-    transform: translateY(0px);
+    transform: translateX(-40px);
   }
 }
 
@@ -153,4 +157,14 @@
 
 .monaco-editor.vs-dark .margin-view-overlays .cgmr {
   background-color: rgba(255, 68, 68, 0.8) !important;
+}
+
+@layer utilities {
+  .clip-path-desktop {
+    clip-path: polygon(0% 0%, 100% 0, 100% 75%, 100% 75%, 100% 100%, 72% 75%, 0% 75%);
+  }
+  
+  .clip-path-mobile {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 27% 78%, 0 100%, 0 77%, 0 76%);
+  }
 }

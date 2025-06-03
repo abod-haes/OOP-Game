@@ -6,7 +6,7 @@ import Map from "@/components/map/map";
 
 function Page() {
     return (
-        <main className=" bg-[#030303]">
+        <main className=" ">
             <div className="container mx-auto grid grid-cols-1 gap-y-24 w-full h-full">
                 <Landing />
 

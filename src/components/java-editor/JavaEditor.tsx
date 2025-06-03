@@ -5,20 +5,48 @@ import "./java-editor.css";
 
 interface JavaEditorProps {
     initialValue?: string;
+    readOnly?: boolean;
     onChange?: (value: string | undefined) => void;
+    height?: string | number;
+    width?: string | number;
+    theme?: string;
+    fontSize?: number;
+    showMinimap?: boolean;
+    defaultCode?: string;
 }
 
-const defaultCode =
-    'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+const DEFAULT_CODE = "";
 
 const JavaEditor: React.FC<JavaEditorProps> = ({
-    initialValue = defaultCode,
+    initialValue,
+    readOnly = false,
     onChange,
+    height = "500px",
+    width = "100%",
+    theme = "vs-dark",
+    fontSize = 14,
+    showMinimap = true,
+    defaultCode = DEFAULT_CODE,
 }) => {
     const [displayedCode, setDisplayedCode] = useState("");
-    const [isTyping] = useState(true);
+    const [isTyping, setIsTyping] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const editorRef = useRef<HTMLDivElement>(null);
+
+    // Process the code to replace \n with actual newlines
+    const processCode = (code: string) => {
+        return code.replace(/\\n/g, "\n");
+    };
+
+    // Use initialValue if provided, otherwise use defaultCode
+    const codeToDisplay = processCode(initialValue || defaultCode);
+
+    // Reset typing state when code changes
+    useEffect(() => {
+        setDisplayedCode("");
+        setCurrentIndex(0);
+        setIsTyping(false);
+    }, [codeToDisplay]);
 
     // Intersection Observer setup
     useEffect(() => {
@@ -26,7 +54,7 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
             (entries) => {
                 entries.forEach((entry) => {
                     if (entry.isIntersecting) {
-                        // setIsTyping(true);
+                        setIsTyping(true);
                         observer.disconnect(); // Stop observing once animation starts
                     }
                 });
@@ -49,37 +77,37 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
         if (!isTyping) return;
 
         const timeout = setTimeout(() => {
-            if (currentIndex < initialValue.length) {
-                setDisplayedCode((prev) => prev + initialValue[currentIndex]);
+            if (currentIndex < codeToDisplay.length) {
+                setDisplayedCode((prev) => prev + codeToDisplay[currentIndex]);
                 setCurrentIndex((prev) => prev + 1);
             } else {
-                // setIsTyping(false);
+                setIsTyping(false);
             }
         }, 30);
 
         return () => clearTimeout(timeout);
-    }, [currentIndex, initialValue, isTyping]);
+    }, [currentIndex, codeToDisplay, isTyping]);
 
     return (
-        <div className="flex w-full flex-col gap-4">
+        <div className="flex w-full flex-col gap-4 px-4">
             <div
                 ref={editorRef}
                 className="java-editor-container"
                 style={{
-                    height: "500px",
-                    width: "100%",
+                    height,
+                    width,
                     background: "transparent",
                 }}
             >
                 <Editor
                     height="100%"
                     defaultLanguage="java"
-                    value={displayedCode}
-                    theme="vs-dark"
+                    value={isTyping ? displayedCode : codeToDisplay}
+                    theme={theme}
                     onChange={onChange}
                     options={{
-                        minimap: { enabled: true },
-                        fontSize: 14,
+                        minimap: { enabled: showMinimap },
+                        fontSize,
                         wordWrap: "on",
                         automaticLayout: true,
                         tabSize: 4,
@@ -88,7 +116,7 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
                         formatOnPaste: true,
                         formatOnType: true,
                         glyphMargin: true,
-                        readOnly: isTyping,
+                        readOnly,
                     }}
                 />
             </div>

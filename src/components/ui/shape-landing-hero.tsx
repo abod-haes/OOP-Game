@@ -116,7 +116,7 @@ function ElegantShape({
 
 function HeroGeometric() {
     return (
-        <div className="fixed inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-metallic-dark">
+        <div className="fixed bg-metallic-dark inset-0 w-full h-full flex items-center justify-center overflow-hidden ">
             <div className="fixed inset-0 bg-gradient-to-br from-metallic-accent/[0.05] via-transparent to-metallic-accent/[0.05] blur-3xl" />
 
             <div className="fixed inset-0 overflow-hidden">

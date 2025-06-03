@@ -16,8 +16,7 @@ const config: Config = {
                     light: "#D1D1D1",
                     accent: "#007ACC",
                 },
-                mainBlue: "#1c9dea",
-                secondly: "#223645",
+
                 "light-100": "#647589",
                 "light-200": "#eff1f2",
                 background: "hsl(var(--background))",
