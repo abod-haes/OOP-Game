@@ -27,8 +27,8 @@ export default function LabGamePage() {
     const [showLights, setShowLights] = useState(false);
     const [fadeOutLights, setFadeOutLights] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [audioEnabled, setAudioEnabled] = useState(false);
-    const [hasUserInteracted, setHasUserInteracted] = useState(false);
+    const [audioEnabled, setAudioEnabled] = useState(true);
+    const [hasUserInteracted, setHasUserInteracted] = useState(true);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Enable audio on first user interaction
