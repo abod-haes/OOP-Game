@@ -29,7 +29,7 @@ export default function LabGamePage() {
     const [mounted, setMounted] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
-    const [audioEnabled, setAudioEnabled] = useState(true);
+    const [audioEnabled, setAudioEnabled] = useState(false);
 
     useEffect(() => {
         setMounted(true);
