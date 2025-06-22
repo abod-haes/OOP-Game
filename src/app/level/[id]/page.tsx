@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import {
-    AlertTriangle,
-    ArrowRight,
-    Play,
-    Zap,
-    Volume2,
-    VolumeX,
-} from "lucide-react";
+import { AlertTriangle, ArrowRight, Play, Zap } from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -27,50 +20,30 @@ export default function LabGamePage() {
     const [showLights, setShowLights] = useState(false);
     const [fadeOutLights, setFadeOutLights] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [audioEnabled, setAudioEnabled] = useState(true);
-    const [hasUserInteracted, setHasUserInteracted] = useState(true);
+    const [audioEnabled] = useState(true);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    // Enable audio on first user interaction
-    useEffect(() => {
-        const enableAudio = () => {
-            if (!hasUserInteracted) {
-                setHasUserInteracted(true);
-                setAudioEnabled(true);
-            }
-        };
-
-        document.addEventListener("click", enableAudio, { once: true });
-        document.addEventListener("keydown", enableAudio, { once: true });
-        document.addEventListener("touchstart", enableAudio, { once: true });
-
-        return () => {
-            document.removeEventListener("click", enableAudio);
-            document.removeEventListener("keydown", enableAudio);
-            document.removeEventListener("touchstart", enableAudio);
-        };
-    }, [hasUserInteracted]);
+    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        if (success && audioEnabled && hasUserInteracted) {
+        setMounted(true);
+    }, []);
+
+    // Success sound
+    useEffect(() => {
+        if (success && audioEnabled) {
             const powerOnAudio = new Audio("/assets/audio/power-on.mp3");
             powerOnAudio.volume = 0.5;
             powerOnAudio.play().catch((err) => {
                 console.error("Power-on audio playback failed:", err);
             });
         }
-    }, [success, audioEnabled, hasUserInteracted]);
+    }, [success, audioEnabled]);
 
+    // Loop error sound if not successful
     useEffect(() => {
-        setMounted(true);
-    }, []);
-    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
-
-    useEffect(() => {
-        if (!mounted || !audioEnabled || !hasUserInteracted) return;
+        if (!mounted || !audioEnabled) return;
 
         if (!success) {
-            // If audioRef already has audio, pause & cleanup before new audio
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -99,7 +72,6 @@ export default function LabGamePage() {
 
             playWithDelay();
         } else {
-            // Success is true, stop and cleanup
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
@@ -113,7 +85,6 @@ export default function LabGamePage() {
             }
         }
 
-        // Cleanup on unmount or dependencies change
         return () => {
             if (audioRef.current) {
                 audioRef.current.pause();
@@ -126,32 +97,12 @@ export default function LabGamePage() {
                 timeoutIdRef.current = null;
             }
         };
-    }, [mounted, success, audioEnabled, hasUserInteracted]);
-
-    const toggleAudio = () => {
-        setAudioEnabled(!audioEnabled);
-        if (!audioEnabled && !hasUserInteracted) {
-            setHasUserInteracted(true);
-        }
-    };
+    }, [mounted, success, audioEnabled]);
 
     return (
         mounted && (
             <div className="relative min-h-screen overflow-hidden">
-                {/* Audio Toggle Button */}
-                <button
-                    onClick={toggleAudio}
-                    className="fixed top-4 right-4 z-50 p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white hover:bg-black/70 transition-all duration-200"
-                    title={audioEnabled ? "Disable Audio" : "Enable Audio"}
-                >
-                    {audioEnabled ? (
-                        <Volume2 className="w-5 h-5" />
-                    ) : (
-                        <VolumeX className="w-5 h-5" />
-                    )}
-                </button>
-
-                {/* Background Layer */}
+                {/* Background Flashing Layer */}
                 <>
                     {!success && (
                         <motion.div
@@ -161,50 +112,37 @@ export default function LabGamePage() {
                         />
                     )}
 
-                    {success && (
+                    {success && showLights && (
                         <>
-                            {showLights && (
-                                <>
-                                    {[...Array(8)].map((_, i) => (
-                                        <motion.div
-                                            key={i}
-                                            className="absolute w-1 h-screen bg-gradient-to-b from-yellow-300 to-transparent opacity-60 rounded-full"
-                                            style={{
-                                                left: `${i * 12.5}%`,
-                                                zIndex: 30,
-                                            }}
-                                            animate={{
-                                                scaleY: [1, 1.5, 1],
-                                                opacity: fadeOutLights
-                                                    ? 0
-                                                    : [0.2, 0.4, 0],
-                                            }}
-                                            transition={{
-                                                repeat: fadeOutLights
-                                                    ? 0
-                                                    : Infinity,
-                                                duration: 1.5 + i * 0.2,
-                                                ease: "easeInOut",
-                                            }}
-                                        />
-                                    ))}
+                            {[...Array(8)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    className="absolute w-1 h-screen bg-gradient-to-b from-yellow-300 to-transparent opacity-60 rounded-full"
+                                    style={{ left: `${i * 12.5}%`, zIndex: 30 }}
+                                    animate={{
+                                        scaleY: [1, 1.5, 1],
+                                        opacity: fadeOutLights
+                                            ? 0
+                                            : [0.2, 0.4, 0],
+                                    }}
+                                    transition={{
+                                        repeat: fadeOutLights ? 0 : Infinity,
+                                        duration: 1.5 + i * 0.2,
+                                        ease: "easeInOut",
+                                    }}
+                                />
+                            ))}
 
-                                    <motion.div
-                                        className="absolute inset-0 bg-yellow-400 mix-blend-screen opacity-0 z-20"
-                                        animate={{
-                                            opacity: fadeOutLights
-                                                ? 0
-                                                : [0.1, 0.2, 0],
-                                        }}
-                                        transition={{
-                                            repeat: fadeOutLights
-                                                ? 0
-                                                : Infinity,
-                                            duration: 2,
-                                        }}
-                                    />
-                                </>
-                            )}
+                            <motion.div
+                                className="absolute inset-0 bg-yellow-400 mix-blend-screen opacity-0 z-20"
+                                animate={{
+                                    opacity: fadeOutLights ? 0 : [0.1, 0.2, 0],
+                                }}
+                                transition={{
+                                    repeat: fadeOutLights ? 0 : Infinity,
+                                    duration: 2,
+                                }}
+                            />
                         </>
                     )}
                 </>
@@ -254,53 +192,47 @@ export default function LabGamePage() {
 
                         <LargeRobotMessage message="Hello! It looks like there's a bug in the lab code. Can you help me fix it?" />
 
-                        <div>
-                            <Dialog
-                                open={isDialogOpen}
-                                onOpenChange={setIsDialogOpen}
-                            >
-                                <DialogTrigger>
-                                    <HoverButton className="flex items-center gap-1">
-                                        <Play className="w-6 h-6 mr-2" />
-                                        Start Coding
-                                    </HoverButton>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-                                    <DialogHeader>
-                                        <DialogTitle className="text-2xl font-bold text-center text-white">
-                                            Abstraction - Create the Roboter
-                                            Class
-                                        </DialogTitle>
-                                    </DialogHeader>
+                        <Dialog
+                            open={isDialogOpen}
+                            onOpenChange={setIsDialogOpen}
+                        >
+                            <DialogTrigger>
+                                <HoverButton className="flex items-center gap-1">
+                                    <Play className="w-6 h-6 mr-2" />
+                                    Start Coding
+                                </HoverButton>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl font-bold text-center text-white">
+                                        Abstraction - Create the Roboter Class
+                                    </DialogTitle>
+                                </DialogHeader>
 
-                                    {/* Editor */}
-                                    <div className="mt-4 flex-grow overflow-auto">
-                                        <JavaEditor />
-                                    </div>
+                                {/* Java Editor */}
+                                <div className="mt-4 flex-grow overflow-auto">
+                                    <JavaEditor />
+                                </div>
 
-                                    <HoverButton
-                                        onClick={() => {
-                                            setSuccess(true);
-                                            setIsDialogOpen(false);
-                                            setShowLights(true);
-                                            setFadeOutLights(false);
+                                <HoverButton
+                                    onClick={() => {
+                                        setSuccess(true);
+                                        setIsDialogOpen(false);
+                                        setShowLights(true);
+                                        setFadeOutLights(false);
 
-                                            // Start fade out after 4s
+                                        setTimeout(() => {
+                                            setFadeOutLights(true);
                                             setTimeout(() => {
-                                                setFadeOutLights(true);
-
-                                                // Remove lights AFTER fade-out duration
-                                                setTimeout(() => {
-                                                    setShowLights(false);
-                                                }, 1000); // Match this to opacity transition time
-                                            }, 4000); // Show lights for 4 seconds
-                                        }}
-                                    >
-                                        🚀 Run Code
-                                    </HoverButton>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
+                                                setShowLights(false);
+                                            }, 1000);
+                                        }, 4000);
+                                    }}
+                                >
+                                    🚀 Run Code
+                                </HoverButton>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 ) : (
                     <div className="relative z-20 flex flex-col items-center justify-center min-h-screen p-8">
@@ -308,10 +240,7 @@ export default function LabGamePage() {
                             className="text-white text-4xl md:text-6xl font-extrabold text-center max-w-4xl px-4"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{
-                                delay: 0.5,
-                                duration: 0.8,
-                            }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
                         >
                             🎉 Mission Accomplished!
                             <br />
@@ -320,10 +249,7 @@ export default function LabGamePage() {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{
-                                delay: 3.5,
-                                duration: 0.8,
-                            }}
+                            transition={{ delay: 3.5, duration: 0.8 }}
                             className="w-full mt-6 flex justify-center"
                         >
                             <HoverButton className="text-lg flex gap-2 items-center justify-center w-1/2 mx-auto">
