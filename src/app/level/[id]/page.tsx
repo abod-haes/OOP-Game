@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { AlertTriangle, ArrowRight, Play, Zap } from "lucide-react";
+import {
+    AlertTriangle,
+    ArrowRight,
+    Play,
+    Volume2,
+    VolumeX,
+    Zap,
+} from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -20,9 +27,9 @@ export default function LabGamePage() {
     const [showLights, setShowLights] = useState(false);
     const [fadeOutLights, setFadeOutLights] = useState(false);
     const [mounted, setMounted] = useState(false);
-    const [audioEnabled] = useState(true);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+    const [audioEnabled, setAudioEnabled] = useState(true);
 
     useEffect(() => {
         setMounted(true);
@@ -98,10 +105,22 @@ export default function LabGamePage() {
             }
         };
     }, [mounted, success, audioEnabled]);
-
     return (
         mounted && (
             <div className="relative min-h-screen overflow-hidden">
+                <div className="absolute top-4 right-4 z-50">
+                    <button
+                        onClick={() => setAudioEnabled(!audioEnabled)}
+                        className="bg-black/50 text-white px-3 py-2 rounded-lg shadow hover:bg-black/70 transition"
+                    >
+                        {audioEnabled ? (
+                            <Volume2 className="w-5 h-5" />
+                        ) : (
+                            <VolumeX className="w-5 h-5" />
+                        )}
+                    </button>
+                </div>
+
                 {/* Background Flashing Layer */}
                 <>
                     {!success && (
