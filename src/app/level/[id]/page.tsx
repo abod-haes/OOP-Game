@@ -31,56 +31,70 @@ export default function LabGamePage() {
         }
     }, [success]);
 
-    useEffect(() => setMounted(true), []);
     useEffect(() => {
-        let timeoutId: NodeJS.Timeout | undefined;
+        setMounted(true);
+    }, []);
+    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
-        if (mounted) {
-            if (!success) {
-                if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
-                }
+    useEffect(() => {
+        if (!mounted) return;
 
-                audioRef.current = new Audio("/assets/audio/error-robot.mp3");
-                audioRef.current.volume = 0.5;
-
-                const playWithDelay = () => {
-                    if (!audioRef.current || success) return;
-
-                    audioRef.current.play().catch((error) => {
-                        console.log("Audio playback failed:", error);
-                    });
-
-                    audioRef.current.onended = () => {
-                        timeoutId = setTimeout(() => {
-                            if (!success && audioRef.current) {
-                                playWithDelay();
-                            }
-                        }, 1000); // Delay between loops
-                    };
-                };
-
-                playWithDelay();
-            } else {
-                if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current.currentTime = 0;
-                    audioRef.current.onended = null;
-                }
-
-                clearTimeout(timeoutId);
-            }
-        }
-
-        return () => {
+        if (!success) {
+            // If audioRef already has audio, pause & cleanup before new audio
             if (audioRef.current) {
                 audioRef.current.pause();
                 audioRef.current.currentTime = 0;
                 audioRef.current.onended = null;
             }
 
-            clearTimeout(timeoutId);
+            const errorAudio = new Audio("/assets/audio/error-robot.mp3");
+            errorAudio.volume = 0.5;
+            audioRef.current = errorAudio;
+
+            const playWithDelay = () => {
+                if (!audioRef.current || success) return; // Stop if success changed
+
+                audioRef.current.play().catch((error) => {
+                    console.log("Audio playback failed:", error);
+                });
+
+                audioRef.current.onended = () => {
+                    timeoutIdRef.current = setTimeout(() => {
+                        if (!success && audioRef.current) {
+                            playWithDelay();
+                        }
+                    }, 1000);
+                };
+            };
+
+            playWithDelay();
+        } else {
+            // Success is true, stop and cleanup
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+                audioRef.current.onended = null;
+                audioRef.current = null;
+            }
+
+            if (timeoutIdRef.current) {
+                clearTimeout(timeoutIdRef.current);
+                timeoutIdRef.current = null;
+            }
+        }
+
+        // Cleanup on unmount or dependencies change
+        return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+                audioRef.current.onended = null;
+                audioRef.current = null;
+            }
+            if (timeoutIdRef.current) {
+                clearTimeout(timeoutIdRef.current);
+                timeoutIdRef.current = null;
+            }
         };
     }, [mounted, success]);
 
