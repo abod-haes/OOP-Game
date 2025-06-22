@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { AlertTriangle, ArrowRight, Play, Zap } from "lucide-react";
+import {
+    AlertTriangle,
+    ArrowRight,
+    Play,
+    Zap,
+    Volume2,
+    VolumeX,
+} from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -20,16 +27,39 @@ export default function LabGamePage() {
     const [showLights, setShowLights] = useState(false);
     const [fadeOutLights, setFadeOutLights] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [audioEnabled, setAudioEnabled] = useState(false);
+    const [hasUserInteracted, setHasUserInteracted] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // Enable audio on first user interaction
     useEffect(() => {
-        if (success) {
+        const enableAudio = () => {
+            if (!hasUserInteracted) {
+                setHasUserInteracted(true);
+                setAudioEnabled(true);
+            }
+        };
+
+        document.addEventListener("click", enableAudio, { once: true });
+        document.addEventListener("keydown", enableAudio, { once: true });
+        document.addEventListener("touchstart", enableAudio, { once: true });
+
+        return () => {
+            document.removeEventListener("click", enableAudio);
+            document.removeEventListener("keydown", enableAudio);
+            document.removeEventListener("touchstart", enableAudio);
+        };
+    }, [hasUserInteracted]);
+
+    useEffect(() => {
+        if (success && audioEnabled && hasUserInteracted) {
             const powerOnAudio = new Audio("/assets/audio/power-on.mp3");
             powerOnAudio.volume = 0.5;
             powerOnAudio.play().catch((err) => {
                 console.error("Power-on audio playback failed:", err);
             });
         }
-    }, [success]);
+    }, [success, audioEnabled, hasUserInteracted]);
 
     useEffect(() => {
         setMounted(true);
@@ -37,7 +67,7 @@ export default function LabGamePage() {
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        if (!mounted) return;
+        if (!mounted || !audioEnabled || !hasUserInteracted) return;
 
         if (!success) {
             // If audioRef already has audio, pause & cleanup before new audio
@@ -52,7 +82,7 @@ export default function LabGamePage() {
             audioRef.current = errorAudio;
 
             const playWithDelay = () => {
-                if (!audioRef.current || success) return; // Stop if success changed
+                if (!audioRef.current || success || !audioEnabled) return;
 
                 audioRef.current.play().catch((error) => {
                     console.log("Audio playback failed:", error);
@@ -60,7 +90,7 @@ export default function LabGamePage() {
 
                 audioRef.current.onended = () => {
                     timeoutIdRef.current = setTimeout(() => {
-                        if (!success && audioRef.current) {
+                        if (!success && audioRef.current && audioEnabled) {
                             playWithDelay();
                         }
                     }, 1000);
@@ -96,11 +126,31 @@ export default function LabGamePage() {
                 timeoutIdRef.current = null;
             }
         };
-    }, [mounted, success]);
+    }, [mounted, success, audioEnabled, hasUserInteracted]);
+
+    const toggleAudio = () => {
+        setAudioEnabled(!audioEnabled);
+        if (!audioEnabled && !hasUserInteracted) {
+            setHasUserInteracted(true);
+        }
+    };
 
     return (
         mounted && (
             <div className="relative min-h-screen overflow-hidden">
+                {/* Audio Toggle Button */}
+                <button
+                    onClick={toggleAudio}
+                    className="fixed top-4 right-4 z-50 p-3 rounded-full bg-black/50 backdrop-blur-sm border border-white/20 text-white hover:bg-black/70 transition-all duration-200"
+                    title={audioEnabled ? "Disable Audio" : "Enable Audio"}
+                >
+                    {audioEnabled ? (
+                        <Volume2 className="w-5 h-5" />
+                    ) : (
+                        <VolumeX className="w-5 h-5" />
+                    )}
+                </button>
+
                 {/* Background Layer */}
                 <>
                     {!success && (
