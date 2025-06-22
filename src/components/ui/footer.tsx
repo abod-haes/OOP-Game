@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+    const pathname = usePathname();
+
+    if (pathname.includes("/level")) return null;
+
     return (
         <footer className="w-full bg-transparent z-10 border-t border-metallic-light/10 relative">
             <div className="absolute top-0 left-0 w-full h-full      bg-black/30 z-[-1]"></div>

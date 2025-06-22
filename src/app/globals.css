@@ -168,3 +168,28 @@
     clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 27% 78%, 0 100%, 0 77%, 0 76%);
   }
 }
+
+/* Custom Cursor */
+* {
+  cursor: none !important;
+}
+
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  background-image: url("/assets/images/cursor.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-16px, -16px);
+  transition: transform 0.1s ease-out;
+}
+
+.custom-cursor.clicking {
+  transform: translate(-16px, -16px) scale(0.8);
+}

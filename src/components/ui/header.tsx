@@ -10,6 +10,7 @@ import Link from "next/link";
 export function Header() {
     const route = useRouter();
     const pathname = usePathname();
+    console.log(pathname.includes("/level"));
     const [isScrolled, setIsScrolled] = useState(false);
 
     useEffect(() => {
@@ -25,7 +26,7 @@ export function Header() {
     const isActive = (path: string) => {
         return pathname === path;
     };
-
+    if (pathname.includes("/level")) return null;
     return (
         <header
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${

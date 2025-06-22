@@ -14,32 +14,6 @@ export function LargeRobotMessage({
     duration = 5000,
 }: LargeRobotMessageProps) {
     const [isVisible, setIsVisible] = useState(true);
-    const [clipPath, setClipPath] = useState(
-        "polygon(0% 0%, 100% 0, 100% 75%, 100% 75%, 100% 100%, 72% 75%, 0% 75%)"
-    );
-
-    useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 768) {
-                setClipPath(
-                    "polygon(0% 0%, 100% 0%, 100% 75%, 42% 78%, 27% 100%, 19% 74%, 0 74%)"
-                );
-            } else {
-                setClipPath(
-                    "polygon(0% 0%, 90% 0, 90% 28%, 90% 63%, 100% 87%, 57% 75%, 0 74%)"
-                );
-            }
-        };
-
-        // Set initial clip-path
-        handleResize();
-
-        // Add event listener
-        window.addEventListener("resize", handleResize);
-
-        // Cleanup
-        return () => window.removeEventListener("resize", handleResize);
-    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -61,14 +35,12 @@ export function LargeRobotMessage({
                 >
                     {/* Container for robot and message */}
                     <div className="flex items-start gap-0 max-lg:flex-col ">
-                        {/* Message Box (positioned left of robot) */}
                         <motion.div
                             initial={{ x: -50, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             transition={{ delay: 0.4, duration: 0.5 }}
-                            className="bg-metallic-accent/20 p-4 pb-16 rounded-lg text-left max-w-xs border border-metallic-accent/30 shadow-lg"
+                            className="bg-metallic-accent/20 p-4  rounded-lg text-left max-w-xs border border-metallic-accent/30 shadow-lg"
                             style={{
-                                clipPath,
                                 borderRadius: "10px",
                             }}
                         >

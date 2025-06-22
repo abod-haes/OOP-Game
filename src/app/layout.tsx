@@ -3,6 +3,7 @@ import "./globals.css";
 import { Footer } from "@/components/ui/footer";
 import { Header } from "@/components/ui/header";
 import Providers from "@/components/providers";
+import CustomCursor from "@/components/ui/custom-cursor";
 
 export const metadata: Metadata = {
     title: "OOP Game",
@@ -17,8 +18,9 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
+                <CustomCursor />
                 <Header />
-                <main className="min-h-[100dvh] pb-24 relative">
+                <main className="min-h-[100dvh]  relative">
                     <Providers>{children}</Providers>
                 </main>
                 <Footer />

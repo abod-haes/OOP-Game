@@ -153,7 +153,7 @@ const HoverButton = React.forwardRef<HTMLButtonElement, HoverButtonProps>(
                 {...props}
             >
                 {circles.map(({ id, x, y, color, fadeState }) => (
-                    <div
+                    <span
                         key={id}
                         className={cn(
                             "absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 rounded-full",
