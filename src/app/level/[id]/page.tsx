@@ -16,10 +16,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { LargeRobotMessage } from "@/components/large-robot-message";
 import { HoverButton } from "@/components/ui/hover-button";
 import JavaEditor from "@/components/java-editor/JavaEditor";
 import { motion } from "framer-motion";
+import { useRobotMessages } from "@/app/hooks/useRobotMessages";
+import { LargeRobotMessageOverlay } from "@/components/large-robot-message";
 
 export default function LabGamePage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -31,11 +32,29 @@ export default function LabGamePage() {
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
     const [audioEnabled, setAudioEnabled] = useState(false);
 
+    // NEW state to control robot overlay visibility manually
+    const [robotVisible, setRobotVisible] = useState(false);
+
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    // Success sound
+    const robotMessages = [
+        "👋 Hello there! I'm your lab assistant robot.",
+        "🛠️ It looks like there's a bug in my core control logic.",
+        "⚠️ My behavior systems are malfunctioning due to a broken abstraction!",
+        "💡 Can you jump into the Java editor and define a working `Roboter` class?",
+        "🚀 Once fixed, hit 'Run Code' to bring me back online!",
+    ];
+
+    const { currentMessage, show } = useRobotMessages(robotMessages, 10000);
+
+    // On mount: show robot overlay and start message cycling
+    useEffect(() => {
+        setRobotVisible(true);
+        show(); // kick off the message cycle
+    }, [show]);
+
     useEffect(() => {
         if (success && audioEnabled) {
             const powerOnAudio = new Audio("/assets/audio/power-on.mp3");
@@ -105,9 +124,23 @@ export default function LabGamePage() {
             }
         };
     }, [mounted, success, audioEnabled]);
+
+    const isLastMessage =
+        robotMessages.indexOf(currentMessage) === robotMessages.length - 1;
+
     return (
         mounted && (
             <div className="relative min-h-screen overflow-hidden">
+                <LargeRobotMessageOverlay
+                    message={robotVisible ? currentMessage : ""}
+                    showStartButton={isLastMessage}
+                    onStart={() => {
+                        setRobotVisible(false); // Hide overlay after Start clicked
+                        setMounted(true); // Open the dialog for coding
+                        setAudioEnabled(true); // Turn on sounds
+                    }}
+                />
+
                 <div className="absolute top-4 right-4 z-50">
                     <button
                         onClick={() => setAudioEnabled(!audioEnabled)}
@@ -209,8 +242,6 @@ export default function LabGamePage() {
                             </p>
                         </div>
 
-                        <LargeRobotMessage message="Hello! It looks like there's a bug in the lab code. Can you help me fix it?" />
-
                         <Dialog
                             open={isDialogOpen}
                             onOpenChange={setIsDialogOpen}
@@ -247,6 +278,7 @@ export default function LabGamePage() {
                                             }, 1000);
                                         }, 4000);
                                     }}
+                                    className="max-w-[200px]"
                                 >
                                     🚀 Run Code
                                 </HoverButton>
@@ -261,7 +293,7 @@ export default function LabGamePage() {
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.5, duration: 0.8 }}
                         >
-                            🎉 Mission Accomplished!
+                            Mission Accomplished!🎉
                             <br />
                             The robot has been repaired successfully.
                         </motion.div>
@@ -271,7 +303,7 @@ export default function LabGamePage() {
                             transition={{ delay: 3.5, duration: 0.8 }}
                             className="w-full mt-6 flex justify-center"
                         >
-                            <HoverButton className="text-lg flex gap-2 items-center justify-center w-1/2 mx-auto">
+                            <HoverButton className="text-lg flex gap-2 items-center justify-center w-1/3 mx-auto ">
                                 Next Step <ArrowRight className="w-5 h-5" />
                             </HoverButton>
                         </motion.div>
