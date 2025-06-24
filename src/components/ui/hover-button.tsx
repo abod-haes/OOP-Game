@@ -119,13 +119,13 @@ const HoverButton = React.forwardRef<HTMLButtonElement, HoverButtonProps>(
                     "rounded-[2rem]",
                     "bg-gradient-to-r from-metallic-dark/30 to-metallic-dark/20",
                     "border border-metallic-light/10",
-                    "shadow-[0_8px_32px_0_rgba(0,122,204,0.15)]",
+                    "shadow-[0_8px_32px_0_rgba(202,94,21,0.15)]",
                     "backdrop-blur-[4px]",
                     "transition-all duration-400 ease-out",
                     // Hover effects
                     "hover:bg-gradient-to-r hover:from-metallic-accent/20 hover:to-metallic-accent/10",
                     "hover:border-metallic-light/20",
-                    "hover:shadow-[0_8px_32px_0_rgba(0,122,204,0.25)]",
+                    "hover:shadow-[0_8px_32px_0_rgba(202,94,21,0.25)]",
                     // Glass effect
                     "before:content-[''] before:absolute before:inset-0",
                     "before:rounded-[inherit] before:pointer-events-none",
@@ -136,16 +136,16 @@ const HoverButton = React.forwardRef<HTMLButtonElement, HoverButtonProps>(
                     "hover:before:opacity-70",
                     // Active state
                     "active:scale-[0.98]",
-                    "active:shadow-[0_4px_16px_0_rgba(0,122,204,0.15)] whitespace-nowrap",
+                    "active:shadow-[0_4px_16px_0_rgba(202,94,21,0.15)] whitespace-nowrap",
                     className
                 )}
                 style={{
                     ...props.style,
                     transform: `translate(${mousePosition.x}px, ${mousePosition.y}px)`,
                     ["--circle-start" as string]:
-                        "var(--tw-gradient-from, #007ACC)",
+                        "var(--tw-gradient-from, #ca5e15)",
                     ["--circle-end" as string]:
-                        "var(--tw-gradient-to, #B0B0B0)",
+                        "var(--tw-gradient-to, #bba98e)",
                 }}
                 onPointerMove={handlePointerMove}
                 onPointerEnter={handlePointerEnter}

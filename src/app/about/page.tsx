@@ -2,8 +2,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import * as lucideReact from "lucide-react";
+import { useRobotMessage } from "@/app/hooks/useRobotToast";
 
 function Page() {
+    const { showRobotPersistent, closeRobotMessage, showRobotSuccess } =
+        useRobotMessage();
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -107,7 +111,7 @@ function Page() {
     );
 
     return (
-        <div className="min-h-[100dvh] w-full pt-36 px-4">
+        <div className="min-h-[100dvh] w-full py-36 px-4">
             <div className="max-w-6xl mx-auto">
                 <motion.div
                     initial="hidden"
@@ -279,6 +283,52 @@ function Page() {
                                         </p>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* Demo Section for Persistent Robot Toast */}
+                    <motion.div variants={itemVariants}>
+                        <div className="text-center space-y-6">
+                            <h3 className="text-2xl font-semibold text-white">
+                                Robot Assistant Demo
+                            </h3>
+                            <p className="text-white/60 max-w-2xl mx-auto">
+                                Try our persistent robot messages. These
+                                messages stay visible until you manually close
+                                them.
+                            </p>
+
+                            <div className="flex flex-wrap justify-center gap-4">
+                                <button
+                                    onClick={() =>
+                                        showRobotPersistent(
+                                            "🤖 Hi! I'm a persistent robot message. I'll stay here until you close me manually. Click the X button or use the close function to dismiss me.",
+                                            { showStartButton: false }
+                                        )
+                                    }
+                                    className="px-6 py-3 bg-metallic-accent text-metallic-dark rounded-lg hover:bg-metallic-accent/80 transition font-medium"
+                                >
+                                    Show Robot Message
+                                </button>
+
+                                <button
+                                    onClick={() => closeRobotMessage()}
+                                    className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                                >
+                                    Close Message
+                                </button>
+
+                                <button
+                                    onClick={() =>
+                                        showRobotSuccess(
+                                            "This is a regular auto-hide message!"
+                                        )
+                                    }
+                                    className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                                >
+                                    Auto-Hide Message
+                                </button>
                             </div>
                         </div>
                     </motion.div>

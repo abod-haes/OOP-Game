@@ -13,8 +13,8 @@ const config: Config = {
             colors: {
                 metallic: {
                     dark: "#4B4B4B",
-                    light: "#D1D1D1",
-                    accent: "#007ACC",
+                    light: "#bba98e",
+                    accent: "#ca5e15",
                 },
 
                 "light-100": "#647589",

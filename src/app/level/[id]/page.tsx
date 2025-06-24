@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import {
     AlertTriangle,
     ArrowRight,
+    LogOutIcon,
     Play,
     Volume2,
     VolumeX,
@@ -20,7 +21,9 @@ import { HoverButton } from "@/components/ui/hover-button";
 import JavaEditor from "@/components/java-editor/JavaEditor";
 import { motion } from "framer-motion";
 import { useRobotMessages } from "@/app/hooks/useRobotMessages";
+import { useRobotMessage } from "@/app/hooks/useRobotToast";
 import { LargeRobotMessageOverlay } from "@/components/large-robot-message";
+import Link from "next/link";
 
 export default function LabGamePage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -35,6 +38,12 @@ export default function LabGamePage() {
     // NEW state to control robot overlay visibility manually
     const [robotVisible, setRobotVisible] = useState(false);
 
+    // State for confirmation dialog
+    const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // Add the global robot toast hook
+    const { showRobotPersistent, hideRobotMessage } = useRobotMessage();
+
     useEffect(() => {
         setMounted(true);
     }, []);
@@ -47,7 +56,10 @@ export default function LabGamePage() {
         "🚀 Once fixed, hit 'Run Code' to bring me back online!",
     ];
 
-    const { currentMessage, show } = useRobotMessages(robotMessages, 10000);
+    const { currentMessage, show, next } = useRobotMessages(
+        robotMessages,
+        10000
+    );
 
     // On mount: show robot overlay and start message cycling
     useEffect(() => {
@@ -128,6 +140,22 @@ export default function LabGamePage() {
     const isLastMessage =
         robotMessages.indexOf(currentMessage) === robotMessages.length - 1;
 
+    // Handle dialog open change to show toast
+    const handleDialogOpenChange = (open: boolean) => {
+        setIsDialogOpen(open);
+
+        if (open) {
+            // Show persistent robot toast when dialog opens (without close button)
+            showRobotPersistent(
+                " Welcome to the coding challenge! Create the Roboter class in the editor below, build the class and run the code to restore my functionality.",
+                { showCloseButton: false }
+            );
+        } else {
+            // Hide toast when dialog closes
+            hideRobotMessage();
+        }
+    };
+
     return (
         mounted && (
             <div className="relative min-h-screen overflow-hidden">
@@ -139,9 +167,10 @@ export default function LabGamePage() {
                         setMounted(true); // Open the dialog for coding
                         setAudioEnabled(true); // Turn on sounds
                     }}
+                    onNext={next}
                 />
 
-                <div className="absolute top-4 right-4 z-50">
+                <div className="absolute top-4 right-6 flex gap-2 z-50">
                     <button
                         onClick={() => setAudioEnabled(!audioEnabled)}
                         className="bg-black/50 text-white px-3 py-2 rounded-lg shadow hover:bg-black/70 transition"
@@ -151,6 +180,12 @@ export default function LabGamePage() {
                         ) : (
                             <VolumeX className="w-5 h-5" />
                         )}
+                    </button>
+                    <button
+                        onClick={() => setShowConfirmDialog(true)}
+                        className="bg-black/50 text-white px-3 py-2 rounded-lg shadow hover:bg-black/70 transition"
+                    >
+                        <LogOutIcon className="w-5 h-5" />
                     </button>
                 </div>
 
@@ -244,7 +279,7 @@ export default function LabGamePage() {
 
                         <Dialog
                             open={isDialogOpen}
-                            onOpenChange={setIsDialogOpen}
+                            onOpenChange={handleDialogOpenChange}
                         >
                             <DialogTrigger>
                                 <HoverButton className="flex items-center gap-1">
@@ -270,6 +305,9 @@ export default function LabGamePage() {
                                         setIsDialogOpen(false);
                                         setShowLights(true);
                                         setFadeOutLights(false);
+
+                                        // Hide robot toast when code runs successfully
+                                        hideRobotMessage();
 
                                         setTimeout(() => {
                                             setFadeOutLights(true);
@@ -309,6 +347,37 @@ export default function LabGamePage() {
                         </motion.div>
                     </div>
                 )}
+
+                {/* Confirmation Dialog */}
+                <Dialog
+                    open={showConfirmDialog}
+                    onOpenChange={setShowConfirmDialog}
+                >
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="text-xl font-bold text-center text-white">
+                                End Level?
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="text-center text-gray-300 mb-6">
+                            Are you sure you want to end this level and return
+                            to the main menu? Your progress will be saved.
+                        </div>
+                        <div className="flex gap-4 justify-center">
+                            <HoverButton
+                                onClick={() => setShowConfirmDialog(false)}
+                                className="bg-gray-600 hover:bg-gray-700"
+                            >
+                                Cancel
+                            </HoverButton>
+                            <Link href="/">
+                                <HoverButton className="bg-red-600 hover:bg-red-700">
+                                    End Level
+                                </HoverButton>
+                            </Link>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
         )
     );

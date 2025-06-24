@@ -5,15 +5,22 @@ interface LargeRobotMessageOverlayProps {
     message: string;
     showStartButton?: boolean;
     onStart?: () => void;
-    // Remove onClick because we don’t want to close by clicking overlay
+    onNext?: () => void;
 }
 
 export function LargeRobotMessageOverlay({
     message,
     showStartButton = false,
     onStart,
+    onNext,
 }: LargeRobotMessageOverlayProps) {
     if (!message) return null;
+
+    const handleOverlayClick = () => {
+        if (!showStartButton && onNext) {
+            onNext();
+        }
+    };
 
     return (
         <AnimatePresence>
@@ -21,14 +28,16 @@ export function LargeRobotMessageOverlay({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[70] flex items-end pb-20 justify-end p-8 bg-metallic-dark/90 backdrop-blur-sm gap-10 cursor-default"
+                onClick={handleOverlayClick}
+                className="fixed inset-0 z-[70] flex items-end pb-20 justify-end p-8 bg-metallic-dark/90 backdrop-blur-sm gap-10 cursor-pointer"
             >
                 <div className="flex items-start gap-0 max-lg:flex-col">
                     <motion.div
                         initial={{ x: -50, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.4, duration: 0.5 }}
-                        className="bg-metallic-accent/20 p-4 rounded-lg text-left max-w-xs border border-metallic-accent/30 shadow-lg"
+                        onClick={handleOverlayClick}
+                        className="bg-metallic-accent/20 p-4 rounded-lg text-left max-w-xs border border-metallic-accent/30 shadow-lg cursor-pointer"
                     >
                         <p className="text-metallic-light text-lg font-semibold">
                             {message}
@@ -43,9 +52,9 @@ export function LargeRobotMessageOverlay({
                                     e.stopPropagation();
                                     onStart();
                                 }}
-                                className="mt-4 px-4 py-2 bg-metallic-accent text-metallic-dark rounded hover:bg-metallic-accent/80 transition"
+                                className="mt-4 px-4 py-2 bg-metallic-accent text-white rounded hover:bg-metallic-accent/80 transition"
                             >
-                                Start Level
+                                Start Code
                             </button>
                         )}
                     </motion.div>

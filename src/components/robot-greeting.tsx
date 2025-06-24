@@ -11,7 +11,7 @@ export function RobotGreeting() {
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsVisible(false);
-        }, 3000); // Hide after 3 seconds
+        }, 3000);
 
         return () => clearTimeout(timer);
     }, []);

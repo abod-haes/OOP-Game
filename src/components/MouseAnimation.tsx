@@ -87,8 +87,8 @@ export const MouseAnimation = () => {
                     width: "80px",
                     height: "80px",
                     background: isHovering
-                        ? "radial-gradient(circle, rgba(0, 122, 204, 0.15) 0%, rgba(0, 122, 204, 0.08) 40%, transparent 70%)"
-                        : "radial-gradient(circle, rgba(209, 209, 209, 0.08) 0%, rgba(209, 209, 209, 0.03) 40%, transparent 70%)",
+                        ? "radial-gradient(circle, rgba(202, 94, 21, 0.15) 0%, rgba(202, 94, 21, 0.08) 40%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(187, 169, 142, 0.08) 0%, rgba(187, 169, 142, 0.03) 40%, transparent 70%)",
                     filter: "blur(12px)",
                 }}
             />
@@ -105,8 +105,8 @@ export const MouseAnimation = () => {
                     width: "50px",
                     height: "50px",
                     background: isHovering
-                        ? "radial-gradient(circle, rgba(0, 122, 204, 0.25) 0%, rgba(0, 122, 204, 0.15) 50%, transparent 70%)"
-                        : "radial-gradient(circle, rgba(209, 209, 209, 0.15) 0%, rgba(209, 209, 209, 0.08) 50%, transparent 70%)",
+                        ? "radial-gradient(circle, rgba(202, 94, 21, 0.25) 0%, rgba(202, 94, 21, 0.15) 50%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(187, 169, 142, 0.15) 0%, rgba(187, 169, 142, 0.08) 50%, transparent 70%)",
                     filter: "blur(8px)",
                 }}
             />
@@ -125,8 +125,8 @@ export const MouseAnimation = () => {
                     width: "24px",
                     height: "24px",
                     boxShadow: isHovering
-                        ? "0 0 25px rgba(0, 122, 204, 0.7), 0 0 50px rgba(0, 122, 204, 0.4), inset 0 0 15px rgba(0, 122, 204, 0.3)"
-                        : "0 0 15px rgba(209, 209, 209, 0.5), 0 0 30px rgba(209, 209, 209, 0.2), inset 0 0 8px rgba(209, 209, 209, 0.1)",
+                        ? "0 0 25px rgba(202, 94, 21, 0.7), 0 0 50px rgba(202, 94, 21, 0.4), inset 0 0 15px rgba(202, 94, 21, 0.3)"
+                        : "0 0 15px rgba(187, 169, 142, 0.5), 0 0 30px rgba(187, 169, 142, 0.2), inset 0 0 8px rgba(187, 169, 142, 0.1)",
                 }}
             />
 
@@ -142,8 +142,8 @@ export const MouseAnimation = () => {
                     width: "12px",
                     height: "12px",
                     background: isHovering
-                        ? "radial-gradient(circle, rgba(0, 122, 204, 0.9) 0%, rgba(0, 122, 204, 0.5) 50%, transparent 70%)"
-                        : "radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(209, 209, 209, 0.3) 50%, transparent 70%)",
+                        ? "radial-gradient(circle, rgba(202, 94, 21, 0.9) 0%, rgba(202, 94, 21, 0.5) 50%, transparent 70%)"
+                        : "radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(187, 169, 142, 0.3) 50%, transparent 70%)",
                     filter: "blur(2px)",
                 }}
             />
@@ -160,7 +160,7 @@ export const MouseAnimation = () => {
                             width: "60px",
                             height: "2px",
                             background:
-                                "linear-gradient(90deg, transparent 0%, rgb(0, 122, 204) 50%, transparent 100%)",
+                                "linear-gradient(90deg, transparent 0%, rgb(202, 94, 21) 50%, transparent 100%)",
                         }}
                     />
                     <div
@@ -172,7 +172,7 @@ export const MouseAnimation = () => {
                             width: "2px",
                             height: "60px",
                             background:
-                                "linear-gradient(180deg, transparent 0%, rgb(0, 122, 204) 50%, transparent 100%)",
+                                "linear-gradient(180deg, transparent 0%, rgb(202, 94, 21) 50%, transparent 100%)",
                             animationDelay: "0.5s",
                         }}
                     />
