@@ -266,7 +266,7 @@ export default function LabGamePage() {
                         <div className="text-center mb-8 animate-fade-in">
                             <div className="flex items-center justify-center mb-4">
                                 <AlertTriangle className="w-16 h-16 text-red-500 animate-bounce" />
-                                <Zap className="w-12 h-12 text-yellow-400 animate-pulse ml-2" />
+                                {/* <Zap className="w-12 h-12 text-yellow-400 animate-pulse ml-2" /> */}
                             </div>
                             <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 animate-glow">
                                 System Failure Detected
