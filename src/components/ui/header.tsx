@@ -57,16 +57,7 @@ export function Header() {
                             >
                                 Home
                             </Link>
-                            <Link
-                                href={routeName.learn}
-                                className={`transition-colors ${
-                                    isActive(routeName.learn)
-                                        ? "text-metallic-accent"
-                                        : "text-metallic-light/60 hover:text-metallic-light"
-                                }`}
-                            >
-                                Learn
-                            </Link>
+
                             <Link
                                 href={routeName.challenges}
                                 className={`transition-colors ${
