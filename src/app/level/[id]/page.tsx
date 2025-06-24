@@ -8,7 +8,6 @@ import {
     Play,
     Volume2,
     VolumeX,
-    Zap,
 } from "lucide-react";
 import {
     Dialog,
