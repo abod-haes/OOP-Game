@@ -9,13 +9,6 @@ function Map() {
     const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const levels = [
-        { id: 1, position: "top-[12%] left-[12%]", label: "Level 1" },
-        { id: 2, position: "top-[12%] right-[12%]", label: "Level 2" },
-        { id: 3, position: "bottom-[12%] left-[12%]", label: "" },
-        { id: 4, position: "bottom-[12%] right-[12%]", label: "Level 3" },
-    ];
-
     const handleLevelClick = (levelId: number) => {
         setSelectedLevel(levelId);
         setIsLoading(true);
@@ -24,9 +17,26 @@ function Map() {
             router.push(`/level/${levelId}`);
         }, 1500);
     };
-
+    const mapLevels = [
+        {
+            id: 0.3,
+            image: "/assets/images/map-1.png",
+        },
+        {
+            id: 1.3,
+            image: "/assets/images/map-2.png",
+        },
+        {
+            id: 3,
+            image: "/assets/images/map-3.png",
+        },
+        {
+            id: 4,
+            image: "/assets/images/map-4.png",
+        },
+    ];
     return (
-        <div className="relative w-full h-full md:min-h-[750px]">
+        <div className="relative w-full h-full md:min-h-[60vh] min-h-[40vh]">
             <AnimatePresence>
                 {isLoading && (
                     <motion.div
@@ -80,7 +90,7 @@ function Map() {
                 )}
             </AnimatePresence>
             <motion.div
-                className="relative w-full md:h-full h-[350px]"
+                className="relative w-full max-w-[1250px] mx-auto h-full flex justify-center"
                 animate={
                     selectedLevel
                         ? {
@@ -94,53 +104,28 @@ function Map() {
                         : {}
                 }
             >
-                {levels.map((level) => (
-                    <React.Fragment key={level.id}>
-                        <motion.div
-                            className={`hover:bg-metallic-accent/40 blur-lg transition-all w-1/4 h-1/4 absolute ${level.position} rounded-full z-10`}
-                            whileHover={{ scale: 1.1 }}
-                            animate={
-                                selectedLevel === level.id
-                                    ? {
-                                          scale: [1, 1.5, 1.7],
-                                          transition: {
-                                              duration: 1,
-                                              times: [0, 0.8, 1],
-                                              ease: "easeInOut",
-                                          },
-                                      }
-                                    : {}
-                            }
-                        />
-                        <motion.div
-                            className={`transition-all w-1/4 h-1/4 absolute ${level.position} z-10 flex items-center justify-center cursor-pointer`}
-                            whileHover={{ scale: 1.1 }}
-                            onClick={() => handleLevelClick(level.id)}
-                            animate={
-                                selectedLevel === level.id
-                                    ? {
-                                          scale: [1, 1.5, 1.7],
-                                          transition: {
-                                              duration: 1,
-                                              times: [0, 0.8, 1],
-                                              ease: "easeInOut",
-                                          },
-                                      }
-                                    : {}
-                            }
-                        >
-                            <span className="text-white text-xl font-bold">
-                                {level.label}
-                            </span>
-                        </motion.div>
-                    </React.Fragment>
-                ))}
                 <Image
-                    src="/assets/images/map.png"
+                    src="/assets/images/map-main.png"
                     alt="Map background"
                     fill
-                    className="opacity-70"
+                    className="z-10 w-full mx-auto"
                 />
+                {mapLevels.map((e) => (
+                    <div
+                        key={e.id}
+                        style={{ left: `${e.id * 20}%` }}
+                        className="group absolute top-[-8%] left-0 w-[14%] h-[70%] cursor-pointer"
+                        onClick={() => handleLevelClick(Math.floor(e.id))}
+                    >
+                        <Image
+                            src={e.image}
+                            alt="Map background"
+                            fill
+                            className="!w-full mx-auto group-hover:-translate-y-8 transition-all duration-300"
+                        />
+                        <div className="absolute top-0 w-full h-[100%] z-20 bg-transparent  transition-all" />
+                    </div>
+                ))}
             </motion.div>
             <motion.div
                 className="fixed inset-0 pointer-events-none z-50"
