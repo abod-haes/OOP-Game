@@ -91,23 +91,14 @@ export default function LabGamePage() {
             errorAudio.volume = 0.5;
             audioRef.current = errorAudio;
 
-            const playWithDelay = () => {
-                if (!audioRef.current || success || !audioEnabled) return;
-
-                audioRef.current.play().catch((error) => {
-                    console.log("Audio playback failed:", error);
-                });
-
-                audioRef.current.onended = () => {
-                    timeoutIdRef.current = setTimeout(() => {
-                        if (!success && audioRef.current && audioEnabled) {
-                            playWithDelay();
-                        }
-                    }, 1000);
-                };
-            };
-
-            playWithDelay();
+            // Play sound once after 0.5s delay
+            timeoutIdRef.current = setTimeout(() => {
+                if (audioRef.current && !success && audioEnabled) {
+                    audioRef.current.play().catch((error) => {
+                        console.log("Audio playback failed:", error);
+                    });
+                }
+            }, 500);
         } else {
             if (audioRef.current) {
                 audioRef.current.pause();
