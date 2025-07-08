@@ -23,6 +23,7 @@ import { useRobotMessages } from "@/app/hooks/useRobotMessages";
 import { useRobotMessage } from "@/app/hooks/useRobotToast";
 import { LargeRobotMessageOverlay } from "@/components/large-robot-message";
 import Link from "next/link";
+import { javaSyntaxChecker } from "@/lib/javaSyntaxChecker";
 
 export default function LabGamePage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -39,6 +40,10 @@ export default function LabGamePage() {
 
     // State for confirmation dialog
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // Add state for code and compilation
+    const [currentCode, setCurrentCode] = useState("");
+    const [isCompiling, setIsCompiling] = useState(false);
 
     // Add the global robot toast hook
     const { showRobotPersistent, hideRobotMessage } = useRobotMessage();
@@ -129,6 +134,86 @@ export default function LabGamePage() {
 
     const isLastMessage =
         robotMessages.indexOf(currentMessage) === robotMessages.length - 1;
+
+            // Handle code changes from editor
+        const handleCodeChange = (code: string | undefined) => {
+            const newCode = code || "";
+            setCurrentCode(newCode);
+        };
+
+        // Handle run code button click
+    const handleRunCode = async () => {
+        if (!currentCode.trim()) {
+            console.log("❌ No code to compile");
+            return;
+        }
+
+        // Always trigger error checking in the editor to show current syntax status
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (typeof window !== 'undefined' && (window as any).triggerJavaErrorCheck) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).triggerJavaErrorCheck();
+        }
+
+        // Check syntax and always show the result
+        const validation = javaSyntaxChecker.validateSyntax(currentCode);
+
+        if (!validation.isValid) {
+            console.group("🔍 Syntax Check Failed");
+            console.log("❌ Cannot compile due to syntax errors:");
+            validation.errors.forEach((error, index) => {
+                console.log(`%cLine ${error.line}: ${error.message}`, 'color: #ff6b6b; font-weight: bold;');
+                console.log(`%c   Explanation: ${error.explanation}`, 'color: #ffa500;');
+                if (index < validation.errors.length - 1) {
+                    console.log('---');
+                }
+            });
+            console.groupEnd();
+            
+            // Don't proceed with compilation if there are syntax errors
+            return;
+        }
+
+        console.log("✅ Syntax is valid! Proceeding with compilation...");
+        setIsCompiling(true);
+
+        try {
+            // Simulate compilation (you can replace this with actual API call)
+            const formData = new FormData();
+            formData.append("code", currentCode);
+
+            const response = await fetch("/api/compile", {
+                method: "POST",
+                body: formData,
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log("✅ Compilation successful!");
+                setSuccess(true);
+                setIsDialogOpen(false);
+                setShowLights(true);
+                setFadeOutLights(false);
+
+                // Hide robot toast when code runs successfully
+                hideRobotMessage();
+
+                setTimeout(() => {
+                    setFadeOutLights(true);
+                    setTimeout(() => {
+                        setShowLights(false);
+                    }, 1000);
+                }, 4000);
+            } else {
+                console.error("❌ Compilation failed:", result.error);
+            }
+        } catch (error) {
+            console.error("❌ Compilation error:", error);
+        } finally {
+            setIsCompiling(false);
+        }
+    };
 
     // Handle dialog open change to show toast
     const handleDialogOpenChange = (open: boolean) => {
@@ -277,7 +362,7 @@ export default function LabGamePage() {
                                     Start Coding
                                 </HoverButton>
                             </DialogTrigger>
-                            <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden justify-center flex flex-col">
+                            <DialogContent className="max-w-7xl min-h-[70vh] max-h-[90vh] overflow-hidden justify-center flex flex-col">
                                 <DialogHeader>
                                     <DialogTitle className="text-2xl font-bold text-center text-white">
                                         Abstraction - Create the Roboter Class
@@ -286,29 +371,22 @@ export default function LabGamePage() {
 
                                 {/* Java Editor */}
                                 <div className="mt-4 flex-grow overflow-auto">
-                                    <JavaEditor />
+                                    <JavaEditor 
+                                        onChange={handleCodeChange}
+                                        enableSyntaxCheck={true}
+                                    />
                                 </div>
 
                                 <HoverButton
-                                    onClick={() => {
-                                        setSuccess(true);
-                                        setIsDialogOpen(false);
-                                        setShowLights(true);
-                                        setFadeOutLights(false);
-
-                                        // Hide robot toast when code runs successfully
-                                        hideRobotMessage();
-
-                                        setTimeout(() => {
-                                            setFadeOutLights(true);
-                                            setTimeout(() => {
-                                                setShowLights(false);
-                                            }, 1000);
-                                        }, 4000);
-                                    }}
-                                    className="max-w-[200px] mx-auto"
+                                    onClick={handleRunCode}
+                                    disabled={isCompiling}
+                                    className={`max-w-[200px] mx-auto ${
+                                        isCompiling
+                                            ? 'opacity-50 cursor-not-allowed' 
+                                            : 'hover:scale-105 transition-transform'
+                                    }`}
                                 >
-                                    🚀 Run Code
+                                    {isCompiling ? '🔄 Compiling...' : '🚀 Run Code'}
                                 </HoverButton>
                             </DialogContent>
                         </Dialog>
@@ -316,7 +394,7 @@ export default function LabGamePage() {
                 ) : (
                     <div className="relative z-20 flex flex-col items-center justify-center min-h-screen p-8">
                         <motion.div
-                            className="text-white text-4xl md:text-6xl font-extrabold text-center max-w-4xl px-4"
+                            className="text-white text-4xl md:text-6xl font-extrabold text-center max-w-7xl px-4"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.5, duration: 0.8 }}

@@ -1,17 +1,14 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import * as lucideReact from "lucide-react";
 import { HoverButton } from "./ui/hover-button";
 import { motion } from "framer-motion";
 import FormInput from "./ui/form-input";
+import { signUp, SignUpRequest, signInWithGoogle } from "@/lib/api/client";
 
 interface SignUpFormProps {
-    onSubmit: (
-        email: string,
-        password: string,
-        confirmPassword: string,
-        remember: boolean
-    ) => void;
+    onSubmit: (success: boolean, message?: string) => void;
 }
 
 interface ToggleSwitchProps {
@@ -52,6 +49,9 @@ const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 
 // Main SignUpForm Component
 const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [userName, setUserName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -60,22 +60,69 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
     const [remember, setRemember] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+    
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
+        
         if (password !== confirmPassword) {
-            alert("Passwords do not match!");
+            setError("Passwords do not match!");
             return;
         }
+
+        if (!firstName.trim() || !lastName.trim() || !userName.trim()) {
+            setError("Please fill in all required fields!");
+            return;
+        }
+
         setIsSubmitting(true);
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setIsSuccess(true);
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        try {
+            const userData: SignUpRequest = {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                userName: userName.trim(),
+                password,
+                email: email.trim(),
+            };
 
-        onSubmit(email, password, confirmPassword, remember);
+            const result = await signUp(userData);
+
+            if (result.success) {
+                setIsSuccess(true);
+                // Redirect to email activation page with email as query parameter
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+                router.push(`/activate-email?email=${encodeURIComponent(email.trim())}`);
+            } else {
+                setError(result.error || "Failed to create account");
+                onSubmit(false, result.error);
+            }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
+            setError(errorMessage);
+            onSubmit(false, errorMessage);
+        } finally {
         setIsSubmitting(false);
         setIsSuccess(false);
+        }
+    };
+
+    const handleGoogleSignIn = async () => {
+        setError(null);
+        setIsGoogleLoading(true);
+        
+        try {
+            await signInWithGoogle();
+            // User will be redirected to Google, so no need to handle success here
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Failed to sign in with Google";
+            setError(errorMessage);
+            setIsGoogleLoading(false);
+        }
     };
 
     const containerVariants = {
@@ -133,7 +180,67 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
                 </div>
             </motion.div>
 
+            {error && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+                >
+                    {error}
+                </motion.div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <motion.div variants={itemVariants}>
+                        <FormInput
+                            icon={
+                                <lucideReact.User
+                                    className="text-white/60"
+                                    size={18}
+                                />
+                            }
+                            type="text"
+                            placeholder="First Name"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            required
+                        />
+                    </motion.div>
+
+                    <motion.div variants={itemVariants}>
+                        <FormInput
+                            icon={
+                                <lucideReact.User
+                                    className="text-white/60"
+                                    size={18}
+                                />
+                            }
+                            type="text"
+                            placeholder="Last Name"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            required
+                        />
+                    </motion.div>
+                </div>
+
+                <motion.div variants={itemVariants}>
+                    <FormInput
+                        icon={
+                            <lucideReact.AtSign
+                                className="text-white/60"
+                                size={18}
+                            />
+                        }
+                        type="text"
+                        placeholder="Username"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        required
+                    />
+                </motion.div>
+
                 <motion.div variants={itemVariants}>
                     <FormInput
                         icon={
@@ -245,11 +352,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
                         disabled={isSubmitting}
                         className={`w-full py-3 rounded-lg ${
                             isSuccess
-                                ? "animate-success"
+                                ? "animate-success bg-green-500"
                                 : "bg-metallic-accent hover:bg-metallic-accent/70"
                         } text-white font-medium transition-all duration-200 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-metallic-accent focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none shadow-lg shadow-metallic-accent/20 hover:shadow-metallic-accent/40`}
                     >
-                        {isSubmitting ? "Creating account..." : "Sign Up"}
+                        {isSubmitting ? "Creating account..." : isSuccess ? "Account Created!" : "Sign Up"}
                     </button>
                 </motion.div>
             </form>
@@ -263,8 +370,21 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
                 </div>
 
                 <div className="mt-6 grid grid-cols-3 gap-5">
-                    <HoverButton className="text-sm flex items-center justify-center px-2 bg-metallic-accent/20 hover:bg-metallic-accent/30 ">
-                        <lucideReact.Chrome size={18} />
+                    <HoverButton 
+                        onClick={handleGoogleSignIn}
+                        disabled={isGoogleLoading || isSubmitting}
+                        className="text-sm flex items-center justify-center px-2 bg-metallic-accent/20 hover:bg-metallic-accent/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isGoogleLoading ? (
+                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                            <svg className="w-4 h-4" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                        )}
                     </HoverButton>
                     <HoverButton className="text-sm flex items-center justify-center px-2 bg-metallic-accent/20 hover:bg-metallic-accent/30 ">
                         <lucideReact.Twitter size={18} />
@@ -279,7 +399,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
                 variants={itemVariants}
                 className="mt-8 text-center text-sm text-white/60"
             >
-                Already have an account?
+                Already have an account?{" "}
                 <a
                     href="/sign-in"
                     className="font-medium text-white hover:text-metallic-accent transition-colors"

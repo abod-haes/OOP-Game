@@ -3,6 +3,8 @@ import Image from "next/image";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Loader from "../ui/loader";
+import { sessionUtils } from "@/lib/api/client";
 
 function Map() {
     const router = useRouter();
@@ -10,11 +12,19 @@ function Map() {
     const [isLoading, setIsLoading] = useState(false);
 
     const handleLevelClick = (levelId: number) => {
+        // Check if user is authenticated
+        if (!sessionUtils.isAuthenticated()) {
+            // If not authenticated, redirect to login page
+            router.push('/sign-in');
+            return;
+        }
+
+        // If authenticated, proceed with level selection
         setSelectedLevel(levelId);
         setIsLoading(true);
 
         setTimeout(() => {
-            router.push(`/level/${levelId}`);
+            router.push(`/2/${levelId}`);
         }, 1500);
     };
     const mapLevels = [
@@ -39,54 +49,7 @@ function Map() {
         <div className="relative w-full h-full md:min-h-[60vh] min-h-[40vh]">
             <AnimatePresence>
                 {isLoading && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[60] flex items-center justify-center bg-metallic-dark/80 backdrop-blur-sm"
-                    >
-                        <div className="relative">
-                            <motion.div
-                                className="w-32 h-32 border-4 border-metallic-accent rounded-full"
-                                animate={{
-                                    rotate: 360,
-                                    scale: [1, 1.2, 1],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: "linear",
-                                }}
-                            />
-                            <motion.div
-                                className="absolute inset-0 w-32 h-32 border-4 border-t-transparent border-metallic-light rounded-full"
-                                animate={{
-                                    rotate: -360,
-                                    scale: [1.2, 1, 1.2],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    ease: "linear",
-                                }}
-                            />
-                            <motion.div
-                                className="absolute inset-0 flex items-center justify-center"
-                                animate={{
-                                    scale: [1, 1.1, 1],
-                                }}
-                                transition={{
-                                    duration: 1,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                            >
-                                <span className="text-metallic-accent text-lg font-bold">
-                                    Loading...
-                                </span>
-                            </motion.div>
-                        </div>
-                    </motion.div>
+                  <Loader />
                 )}
             </AnimatePresence>
             <motion.div

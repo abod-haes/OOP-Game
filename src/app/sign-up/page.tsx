@@ -3,18 +3,15 @@ import SignUpForm from "@/components/signup-form";
 import React from "react";
 
 function Page() {
-    const handleSignUp = (
-        email?: string,
-        password?: string,
-        confirmPassword?: string,
-        remember?: boolean
-    ) => {
-        console.log("Sign up attempt:", {
-            email,
-            password,
-            confirmPassword,
-            remember,
-        });
+    const handleSignUp = (success: boolean, message?: string) => {
+        if (success) {
+            console.log("Sign up successful:", message);
+            // You can redirect to a success page or dashboard here
+            // For example: window.location.href = '/dashboard';
+        } else {
+            console.error("Sign up failed:", message);
+            // Handle error - maybe show a toast or alert
+        }
     };
 
     return (

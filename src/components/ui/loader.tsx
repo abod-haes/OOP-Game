@@ -1,18 +1,56 @@
 import React from "react";
-
-const Loader = ({ color }: { color?: "main" | "light" }) => {
-  const style = {
-    "--uib-size": "20px",
-    "--uib-speed": "0.8s",
-    "--uib-color": color === "main" ? "#1c9dea" : "#fff",
-  } as React.CSSProperties;
+import {motion} from "framer-motion"
+const Loader = () => {
 
   return (
-    <div className="three-body" style={style}>
-      <div className="three-body__dot"></div>
-      <div className="three-body__dot"></div>
-      <div className="three-body__dot"></div>
+    <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[60] flex items-center justify-center bg-metallic-dark/80 backdrop-blur-sm"
+>
+    <div className="relative">
+        <motion.div
+            className="w-32 h-32 border-4 border-metallic-accent rounded-full"
+            animate={{
+                rotate: 360,
+                scale: [1, 1.2, 1],
+            }}
+            transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear",
+            }}
+        />
+        <motion.div
+            className="absolute inset-0 w-32 h-32 border-4 border-t-transparent border-metallic-light rounded-full"
+            animate={{
+                rotate: -360,
+                scale: [1.2, 1, 1.2],
+            }}
+            transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                ease: "linear",
+            }}
+        />
+        <motion.div
+            className="absolute inset-0 flex items-center justify-center"
+            animate={{
+                scale: [1, 1.1, 1],
+            }}
+            transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+            }}
+        >
+            <span className="text-metallic-accent text-lg font-bold">
+                Loading...
+            </span>
+        </motion.div>
     </div>
+</motion.div>
   );
 };
 

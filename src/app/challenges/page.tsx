@@ -43,7 +43,7 @@ export default function ChallengesPage() {
                     <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 animate-glow">
                         🏆 Coding Challenges
                     </h1>
-                    <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
+                    <p className="text-xl md:text-2xl text-gray-300 max-w-7xl mx-auto leading-relaxed">
                         Test your programming skills with our comprehensive
                         challenge system. Each level is designed to push your
                         abilities and expand your knowledge.

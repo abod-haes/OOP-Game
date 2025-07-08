@@ -18,22 +18,43 @@ function formatError(error: string): string {
     // Split the error message into lines
     const lines = error.split("\n");
 
-    // Filter out empty lines and common Java compiler messages
+    // Filter out only truly empty lines, but keep syntax error indicators
     const errorLines = lines.filter(
         (line) =>
             line.trim() &&
             !line.includes("Note:") &&
-            !line.includes("warning:") &&
-            !line.includes("^")
+            !line.includes("warning:")
     );
 
-    // Combine all error messages into one
+    // If we have error lines, format them properly
     if (errorLines.length > 0) {
-        // Remove duplicate errors and format them
-        const uniqueErrors = errorLines
-            .map((line) => line.trim())
-            .filter((line, index, self) => self.indexOf(line) === index);
-        return uniqueErrors.join(" | ");
+        // Group related error lines together (error message + pointer line)
+        const groupedErrors: string[] = [];
+        let currentGroup = "";
+        
+        for (let i = 0; i < errorLines.length; i++) {
+            const line = errorLines[i].trim();
+            
+            // If line contains "^", it's a pointer line, add it to current group
+            if (line.includes("^")) {
+                if (currentGroup) {
+                    currentGroup += "\n" + line;
+                }
+            } else {
+                // If we have a current group, save it and start a new one
+                if (currentGroup) {
+                    groupedErrors.push(currentGroup);
+                }
+                currentGroup = line;
+            }
+        }
+        
+        // Add the last group if exists
+        if (currentGroup) {
+            groupedErrors.push(currentGroup);
+        }
+        
+        return groupedErrors.join("\n\n");
     }
 
     return error.trim();

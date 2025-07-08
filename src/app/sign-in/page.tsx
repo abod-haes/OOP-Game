@@ -3,12 +3,15 @@ import LoginForm from "@/components/signin-form";
 import React from "react";
 
 function Page() {
-    const handleLogin = (
-        email?: string,
-        password?: string,
-        remember?: boolean
-    ) => {
-        console.log("Login attempt:", { email, password, remember });
+    const handleLogin = (success: boolean, message?: string) => {
+        if (success) {
+            console.log("Sign in successful:", message);
+            // You can redirect to dashboard or home page here
+            // For example: window.location.href = '/dashboard';
+        } else {
+            console.error("Sign in failed:", message);
+            // Handle error - maybe show a toast or alert
+        }
     };
 
     return (

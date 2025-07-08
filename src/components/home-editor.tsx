@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 
 function HomeEditor() {
     return (
-        <div className="w-full relative ">
+        <div className="w-full max-w-7xl mx-auto">
             <div
                 className={cn(
-                    "relative backdrop-blur-lg bg-[rgba(43,55,80,0.1)] shadow-xl max-w-screen-2xl mx-auto w-full border border-gray-800 px-4 py-8 h-full overflow-hidden rounded-2xl  items-start",
+                    "relative backdrop-blur-lg bg-[rgba(43,55,80,0.1)] shadow-xl w-full border border-gray-800 px-6 py-6 rounded-2xl",
                     "before:shadow-[inset_0_0_0_1px_rgba(170,202,255,0.2),inset_0_0_16px_0_rgba(170,202,255,0.1),inset_0_-3px_12px_0_rgba(170,202,255,0.15),0_1px_3px_0_rgba(0,0,0,0.50),0_4px_12px_0_rgba(0,0,0,0.45)]",
                     "before:mix-blend-multiply before:transition-transform before:duration-300",
                     "overflow-hidden"
@@ -18,13 +18,21 @@ function HomeEditor() {
             >
                 <div className="absolute w-full h-full top-0 left-0 z-10"></div>
 
-                <JavaEditor initialValue='public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}' />
+                <div className="relative z-20 h-[600px]">
+                    <JavaEditor 
+                        initialValue='public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}'
+                    />
+                </div>
 
                 <Meteors number={20} />
             </div>
-            <HoverButton className=" flex items-center gap-1 mx-auto mt-10  ">
-                <IoMdSettings /> Run Code
-            </HoverButton>
+            
+            <div className="flex justify-center mt-6">
+                <HoverButton className="flex items-center gap-2 px-6 py-3">
+                    <IoMdSettings className="w-5 h-5" /> 
+                    Run Code
+                </HoverButton>
+            </div>
         </div>
     );
 }
