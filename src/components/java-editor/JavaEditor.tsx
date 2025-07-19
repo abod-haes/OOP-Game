@@ -62,22 +62,56 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
       if (!code.trim()) {
         const errorMessage =
           "No code entered. Please enter some Java code to check syntax.";
+        console.log("🔍 Syntax Check - Empty Code:", errorMessage);
         showRobotError(errorMessage);
         return;
       }
 
       const validation = javaSyntaxChecker.validateSyntax(code);
 
+      // Console log the validation result for debugging
+      console.log("🔍 Syntax Check Result:", {
+        isValid: validation.isValid,
+        errorCount: validation.errors.length,
+        codeLength: code.length,
+        timestamp: new Date().toISOString(),
+      });
+
       // Show toast message based on validation result
       if (!validation.isValid) {
         const errorCount = validation.errors.length;
-        const errorMessage = `❌ Found ${errorCount} syntax error${
+
+        // Create detailed error message with line numbers and explanations
+        let detailedErrorMessage = `❌ Found ${errorCount} syntax error${
           errorCount > 1 ? "s" : ""
-        } in your Java code.`;
-        showRobotError(errorMessage);
+        } in your Java code:\n\n`;
+
+        validation.errors.forEach((error, index) => {
+          detailedErrorMessage += `${index + 1}. Line ${error.line}, Column ${
+            error.column
+          }: ${error.message}\n`;
+          detailedErrorMessage += `   ${error.explanation}\n\n`;
+        });
+
+        // Remove the last double newline
+        detailedErrorMessage = detailedErrorMessage.trim();
+
+        // Console log each individual error for detailed debugging
+        console.log("❌ Syntax Errors Found:");
+        validation.errors.forEach((error, index) => {
+          console.log(`  Error ${index + 1}:`, {
+            line: error.line,
+            column: error.column,
+            message: error.message,
+            explanation: error.explanation,
+          });
+        });
+
+        showRobotError(detailedErrorMessage);
       } else {
         const successMessage =
           "✅ Java syntax is valid! Your code is ready to compile and run.";
+        console.log("✅ Syntax Check - Success:", successMessage);
         showRobotSuccess(successMessage);
       }
     },
@@ -173,8 +207,7 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
           {title || "Java Code Editor"}
         </h3>
         <p className="text-sm text-gray-300 max-w-2xl">
-          {description ||
-            "Write your Java class here. Syntax errors will be shown as toast messages."}
+          {description || "Write your Java class here."}
         </p>
       </div>
 

@@ -12,11 +12,18 @@ export interface SyntaxValidationResult {
 
 class JavaSyntaxChecker {
   validateSyntax(code: string): SyntaxValidationResult {
+    console.log("🔍 JavaSyntaxChecker: Starting syntax validation");
+    console.log("🔍 Code to validate:", {
+      length: code.length,
+      preview: code.substring(0, 100) + "...",
+    });
+
     const errors: SyntaxError[] = [];
     const lines = code.split("\n");
 
     // Check if code is empty
     if (!code || code.trim().length === 0) {
+      console.log("❌ JavaSyntaxChecker: Empty code detected");
       errors.push({
         line: 1,
         column: 1,
@@ -26,39 +33,47 @@ class JavaSyntaxChecker {
       return { isValid: false, errors };
     }
 
-    // Check for basic Java structure
-    if (!code.includes("class")) {
+    // Check for basic Java structure - accept both class and interface
+    if (!code.includes("class") && !code.includes("interface")) {
       errors.push({
         line: 1,
         column: 1,
-        message: "Missing class declaration",
-        explanation: "Java code must contain at least one class declaration.",
-      });
-    }
-
-    // Check for any class declaration (removed specific Roboter requirement)
-    if (!code.includes("class ") && !code.includes("public class ")) {
-      errors.push({
-        line: 1,
-        column: 1,
-        message: "Missing class declaration",
+        message: "Missing class or interface declaration",
         explanation:
-          "Java code must contain at least one class declaration. Use 'public class YourClassName { ... }'",
+          "Java code must contain at least one class or interface declaration.",
       });
     }
 
-    // Check for main method
+    // Check for any class or interface declaration
     if (
-      !code.includes("public static void main") &&
-      !code.includes("static void main")
+      !code.includes("class ") &&
+      !code.includes("public class ") &&
+      !code.includes("interface ") &&
+      !code.includes("public interface ")
     ) {
       errors.push({
         line: 1,
         column: 1,
-        message: "Missing main method",
+        message: "Missing class or interface declaration",
         explanation:
-          "Java programs need a main method to run. Add 'public static void main(String[] args) { ... }'",
+          "Java code must contain at least one class or interface declaration. Use 'public class YourClassName { ... }' or 'public interface YourInterfaceName { ... }'",
       });
+    }
+
+    // Only require main method if it's a class (not an interface)
+    if (code.includes("class") && !code.includes("interface")) {
+      if (
+        !code.includes("public static void main") &&
+        !code.includes("static void main")
+      ) {
+        errors.push({
+          line: 1,
+          column: 1,
+          message: "Missing main method",
+          explanation:
+            "Java programs need a main method to run. Add 'public static void main(String[] args) { ... }'",
+        });
+      }
     }
 
     // Check for balanced braces
@@ -122,7 +137,47 @@ class JavaSyntaxChecker {
         continue;
       }
 
-      // Check for missing semicolons
+      // Check for incorrect String type (lowercase 'string' should be 'String')
+      if (trimmedLine.includes("string ") && !trimmedLine.includes("String ")) {
+        errors.push({
+          line: lineNumber,
+          column: line.indexOf("string"),
+          message: "Incorrect String type",
+          explanation:
+            "Java uses 'String' (capital S), not 'string' (lowercase s).",
+        });
+      }
+
+      // Check for missing semicolons in interface method declarations
+      if (
+        code.includes("interface") &&
+        (trimmedLine.includes("void ") ||
+          trimmedLine.includes("String ") ||
+          trimmedLine.includes("int ") ||
+          trimmedLine.includes("boolean ") ||
+          trimmedLine.includes("double ") ||
+          trimmedLine.includes("float ") ||
+          trimmedLine.includes("char ") ||
+          trimmedLine.includes("byte ") ||
+          trimmedLine.includes("short ") ||
+          trimmedLine.includes("long ")) &&
+        trimmedLine.includes("(") &&
+        trimmedLine.includes(")") &&
+        !trimmedLine.endsWith(";") &&
+        !trimmedLine.endsWith("{") &&
+        !trimmedLine.includes("class ") &&
+        !trimmedLine.includes("interface ")
+      ) {
+        errors.push({
+          line: lineNumber,
+          column: line.length,
+          message: "Missing semicolon in interface method declaration",
+          explanation:
+            "Interface method declarations must end with a semicolon ';'.",
+        });
+      }
+
+      // Check for missing semicolons (existing logic for classes)
       if (
         trimmedLine &&
         !trimmedLine.startsWith("//") &&
@@ -132,6 +187,7 @@ class JavaSyntaxChecker {
         !trimmedLine.endsWith("}") &&
         !trimmedLine.endsWith(";") &&
         !trimmedLine.includes("class ") &&
+        !trimmedLine.includes("interface ") &&
         !trimmedLine.includes("public ") &&
         !trimmedLine.includes("private ") &&
         !trimmedLine.includes("protected ") &&
@@ -159,7 +215,6 @@ class JavaSyntaxChecker {
         !trimmedLine.includes("native") &&
         !trimmedLine.includes("abstract") &&
         !trimmedLine.includes("final") &&
-        !trimmedLine.includes("interface ") &&
         !trimmedLine.includes("enum ") &&
         !trimmedLine.includes("extends ") &&
         !trimmedLine.includes("implements ") &&
@@ -222,6 +277,17 @@ class JavaSyntaxChecker {
           message: "Missing opening brace after class declaration",
           explanation:
             "Class declarations must be followed by an opening brace '{'.",
+        });
+      }
+
+      // Check for missing opening brace after interface declaration
+      if (line.includes("public interface") && !line.includes("{")) {
+        errors.push({
+          line: lineNumber,
+          column: line.length,
+          message: "Missing opening brace after interface declaration",
+          explanation:
+            "Interface declarations must be followed by an opening brace '{'.",
         });
       }
 
@@ -300,10 +366,107 @@ class JavaSyntaxChecker {
       });
     }
 
+    // Check for interface implementation in abstract classes
+    if (code.includes("abstract class") && code.includes("implements")) {
+      // Extract interface name from implements clause
+      const implementsMatch = code.match(/implements\s+(\w+)/);
+      if (implementsMatch) {
+        const interfaceName = implementsMatch[1];
+
+        // Check if the interface is defined in the code
+        if (code.includes(`interface ${interfaceName}`)) {
+          // Extract interface methods
+          const interfaceStart = code.indexOf(`interface ${interfaceName}`);
+          const interfaceEnd = code.indexOf("}", interfaceStart);
+          const interfaceCode = code.substring(interfaceStart, interfaceEnd);
+
+          // Extract method signatures from interface
+          const interfaceMethods = this.extractMethodSignatures(interfaceCode);
+
+          // Extract method signatures from abstract class
+          const classStart = code.indexOf("abstract class");
+          const classEnd = code.lastIndexOf("}");
+          const classCode = code.substring(classStart, classEnd);
+          const classMethods = this.extractMethodSignatures(classCode);
+
+          // Check if all interface methods are implemented
+          for (const interfaceMethod of interfaceMethods) {
+            const isImplemented = classMethods.some((classMethod) =>
+              this.methodsMatch(interfaceMethod, classMethod)
+            );
+
+            if (!isImplemented) {
+              errors.push({
+                line: 1,
+                column: 1,
+                message: `Missing implementation of interface method: ${interfaceMethod}`,
+                explanation: `The abstract class must implement all methods from the ${interfaceName} interface.`,
+              });
+            }
+          }
+        }
+      }
+    }
+
     return {
       isValid: errors.length === 0,
       errors,
     };
+  }
+
+  // Helper method to extract method signatures
+  private extractMethodSignatures(code: string): string[] {
+    const methods: string[] = [];
+    const lines = code.split("\n");
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // Look for method declarations (void, String, int, etc.)
+      if (
+        (trimmedLine.includes("void ") ||
+          trimmedLine.includes("String ") ||
+          trimmedLine.includes("int ") ||
+          trimmedLine.includes("boolean ") ||
+          trimmedLine.includes("double ") ||
+          trimmedLine.includes("float ") ||
+          trimmedLine.includes("char ") ||
+          trimmedLine.includes("byte ") ||
+          trimmedLine.includes("short ") ||
+          trimmedLine.includes("long ")) &&
+        trimmedLine.includes("(") &&
+        trimmedLine.includes(")") &&
+        !trimmedLine.includes("class ") &&
+        !trimmedLine.includes("interface ")
+      ) {
+        // Extract method signature
+        const methodMatch = trimmedLine.match(/(\w+\s+\w+\s*\([^)]*\))/);
+        if (methodMatch) {
+          methods.push(methodMatch[1]);
+        }
+      }
+    }
+
+    return methods;
+  }
+
+  // Helper method to check if two method signatures match (allowing for overloading)
+  private methodsMatch(interfaceMethod: string, classMethod: string): boolean {
+    // Extract method name and parameters
+    const interfaceMatch = interfaceMethod.match(/(\w+)\s*\(([^)]*)\)/);
+    const classMatch = classMethod.match(/(\w+)\s*\(([^)]*)\)/);
+
+    if (!interfaceMatch || !classMatch) return false;
+
+    const interfaceName = interfaceMatch[1];
+    const className = classMatch[1];
+
+    // Method names must match
+    if (interfaceName !== className) return false;
+
+    // For interface implementation, we need at least one method with matching parameters
+    // But we also allow method overloading (same name, different parameters)
+    return true; // Allow overloading - any method with the same name is acceptable
   }
 }
 

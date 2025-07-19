@@ -721,10 +721,16 @@ export async function checkCode(
   code: string
 ): Promise<ApiResponse<unknown>> {
   try {
-    const response = await ProtectedApiClient.post("/api/checkCode", {
-      userId,
-      levelId,
-      code,
+    const response = await fetch("/api/checkCode", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        levelId,
+        code,
+      }),
     });
     return await handleApiResponse(response);
   } catch (error: unknown) {
