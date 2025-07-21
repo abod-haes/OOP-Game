@@ -12,6 +12,7 @@ import {
   Level,
 } from "@/lib/api/client";
 import { BASE_URL } from "@/app/api-services";
+import { useGameStore } from "@/lib/store";
 
 interface Section {
   id: string;
@@ -47,6 +48,10 @@ function Map() {
   const [isLoadingAllLevels, setIsLoadingAllLevels] = useState(false);
   const [userLastLevel, setUserLastLevel] = useState<Level | null>(null);
 
+  // Zustand store
+  const { setSections: setStoreSections, setUserLevels: setStoreUserLevels } =
+    useGameStore();
+
   const fetchUserLevels = async () => {
     try {
       setIsLoadingUserLevels(true);
@@ -56,6 +61,7 @@ function Map() {
         const response = await getUserLastLevels(userId);
         if (response.success && response.data) {
           setUserLevels(response.data);
+          setStoreUserLevels(response.data);
           console.log(response.data, "user levels");
         }
       }
@@ -175,13 +181,22 @@ function Map() {
 
       setSections(sectionsWithLevels);
 
+      // Update Zustand store with sections data
+      const storeSectionsData = sectionsWithLevels.map((section) => ({
+        sectionId: section.id,
+        sectionNumber: section.sectionNumber,
+        levels: section.levels,
+      }));
+      console.log(storeSectionsData, "ss");
+      setStoreSections(storeSectionsData);
+
       // Find user's last level
       const lastLevel = findUserLastLevel(userLevels, allLevels);
       setUserLastLevel(lastLevel);
 
       console.log("User's last level:", lastLevel);
     }
-  }, [allLevels, userLevels, sections.length]);
+  }, [allLevels, userLevels, sections.length, setStoreSections]);
 
   const handleLevelClick = (sectionId: string, targetLevelId?: string) => {
     // Check if user is authenticated
