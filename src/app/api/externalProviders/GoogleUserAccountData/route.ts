@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { completeLocalGoogleOAuthFlow } from "@/lib/config/google-oauth";
 
+// Force dynamic rendering
+export const dynamic = "force-dynamic";
+
 export interface GoogleUserAccountResponse {
   accessToken: string;
   refreshToken: string;

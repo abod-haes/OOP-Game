@@ -196,13 +196,7 @@ function Map() {
 
       console.log("User's last level:", lastLevel);
     }
-  }, [
-    allLevels,
-    userLevels,
-    sections.length,
-    setStoreSections,
-    findUserLastLevel,
-  ]);
+  }, [allLevels, userLevels, sections, setStoreSections, findUserLastLevel]);
 
   const handleLevelClick = (sectionId: string, targetLevelId?: string) => {
     // Check if user is authenticated

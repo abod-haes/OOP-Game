@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { sessionUtils } from "@/lib/api/client";
 import Loader from "@/components/ui/loader";
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
   );
@@ -259,5 +259,13 @@ export default function GoogleCallbackPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <GoogleCallbackContent />
+    </Suspense>
   );
 }
