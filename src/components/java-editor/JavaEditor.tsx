@@ -181,8 +181,9 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      const currentDebounceRef = debounceRef.current;
+      if (currentDebounceRef) {
+        clearTimeout(currentDebounceRef);
       }
     };
   }, []);

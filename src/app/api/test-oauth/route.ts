@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   GOOGLE_OAUTH_CONFIG,
   generateGoogleSignInUrl,
 } from "@/lib/config/google-oauth";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test the OAuth configuration
     const signInUrl = generateGoogleSignInUrl();

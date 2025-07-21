@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Loader from "../ui/loader";
@@ -52,7 +52,7 @@ function Map() {
   const { setSections: setStoreSections, setUserLevels: setStoreUserLevels } =
     useGameStore();
 
-  const fetchUserLevels = async () => {
+  const fetchUserLevels = useCallback(async () => {
     try {
       setIsLoadingUserLevels(true);
       const userId = sessionUtils.getUserId();
@@ -70,9 +70,9 @@ function Map() {
     } finally {
       setIsLoadingUserLevels(false);
     }
-  };
+  }, [setStoreUserLevels]);
 
-  const fetchAllLevels = async () => {
+  const fetchAllLevels = useCallback(async () => {
     try {
       setIsLoadingAllLevels(true);
       const response = await getAllLevels({
@@ -89,53 +89,53 @@ function Map() {
     } finally {
       setIsLoadingAllLevels(false);
     }
-  };
+  }, []);
 
   // Find user's last level
-  const findUserLastLevel = (
-    userLevels: UserLevel[],
-    allLevels: Level[]
-  ): Level | null => {
-    if (userLevels.length === 0) return null;
+  const findUserLastLevel = useCallback(
+    (userLevels: UserLevel[], allLevels: Level[]): Level | null => {
+      if (userLevels.length === 0) return null;
 
-    // Find the highest level number among user's completed levels
-    const highestUserLevel = userLevels.reduce((highest, current) => {
-      return current.levelNumber > highest.levelNumber ? current : highest;
-    });
+      // Find the highest level number among user's completed levels
+      const highestUserLevel = userLevels.reduce((highest, current) => {
+        return current.levelNumber > highest.levelNumber ? current : highest;
+      });
 
-    // Find the next level after the highest completed level
-    const nextLevel = allLevels.find(
-      (level) =>
-        level.sectionId === highestUserLevel.sectionId &&
-        level.levelNumber === highestUserLevel.levelNumber + 1
-    );
-
-    // If there's a next level in the same section, return it
-    if (nextLevel) return nextLevel;
-
-    // If no next level in same section, find the first level of the next section
-    const currentSection = sections.find(
-      (s) => s.id === highestUserLevel.sectionId
-    );
-    if (currentSection) {
-      const nextSection = sections.find(
-        (s) => s.sectionNumber === currentSection.sectionNumber + 1
+      // Find the next level after the highest completed level
+      const nextLevel = allLevels.find(
+        (level) =>
+          level.sectionId === highestUserLevel.sectionId &&
+          level.levelNumber === highestUserLevel.levelNumber + 1
       );
-      if (nextSection) {
-        const firstLevelOfNextSection = allLevels.find(
-          (level) =>
-            level.sectionId === nextSection.id && level.levelNumber === 1
-        );
-        if (firstLevelOfNextSection) return firstLevelOfNextSection;
-      }
-    }
 
-    // If no next level found, return the highest completed level
-    const lastCompletedLevel = allLevels.find(
-      (level) => level.id === highestUserLevel.id
-    );
-    return lastCompletedLevel || null;
-  };
+      // If there's a next level in the same section, return it
+      if (nextLevel) return nextLevel;
+
+      // If no next level in same section, find the first level of the next section
+      const currentSection = sections.find(
+        (s) => s.id === highestUserLevel.sectionId
+      );
+      if (currentSection) {
+        const nextSection = sections.find(
+          (s) => s.sectionNumber === currentSection.sectionNumber + 1
+        );
+        if (nextSection) {
+          const firstLevelOfNextSection = allLevels.find(
+            (level) =>
+              level.sectionId === nextSection.id && level.levelNumber === 1
+          );
+          if (firstLevelOfNextSection) return firstLevelOfNextSection;
+        }
+      }
+
+      // If no next level found, return the highest completed level
+      const lastCompletedLevel = allLevels.find(
+        (level) => level.id === highestUserLevel.id
+      );
+      return lastCompletedLevel || null;
+    },
+    [sections]
+  );
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -166,7 +166,7 @@ function Map() {
     fetchSections();
     fetchUserLevels();
     fetchAllLevels();
-  }, []);
+  }, [fetchUserLevels, fetchAllLevels]);
 
   // Update sections with their levels and find user's last level
   useEffect(() => {
@@ -196,7 +196,13 @@ function Map() {
 
       console.log("User's last level:", lastLevel);
     }
-  }, [allLevels, userLevels, sections.length, setStoreSections]);
+  }, [
+    allLevels,
+    userLevels,
+    sections.length,
+    setStoreSections,
+    findUserLastLevel,
+  ]);
 
   const handleLevelClick = (sectionId: string, targetLevelId?: string) => {
     // Check if user is authenticated
