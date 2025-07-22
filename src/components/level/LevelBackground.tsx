@@ -4,13 +4,36 @@ interface LevelBackgroundProps {
   success: boolean;
   showLights: boolean;
   fadeOutLights: boolean;
+  levelNumber?: number;
 }
 
 export function LevelBackground({
   success,
   showLights,
   fadeOutLights,
+  levelNumber,
 }: LevelBackgroundProps) {
+  // Function to get level background image based on level number
+  const getLevelBackgroundImage = (levelNumber?: number): string => {
+    if (!levelNumber) return "/assets/images/A.jpg";
+
+    const levelImageMap: { [key: number]: string } = {
+      1: "/assets/images/A.jpg",
+      2: "/assets/images/B.jpg",
+      3: "/assets/images/C.jpg",
+      4: "/assets/images/D.jpg",
+      5: "/assets/images/E.jpg",
+      6: "/assets/images/AA.jpg",
+      7: "/assets/images/BB.jpg",
+      8: "/assets/images/CC.jpg",
+      9: "/assets/images/D1.png",
+      10: "/assets/images/D2.png",
+      11: "/assets/images/D3.png",
+      12: "/assets/images/D4.png",
+    };
+
+    return levelImageMap[levelNumber] || "/assets/images/A.jpg";
+  };
   return (
     <>
       {/* Background Flashing Layer */}
@@ -57,28 +80,33 @@ export function LevelBackground({
 
       {/* Background Images */}
       <div className="absolute inset-0 z-[2]">
+        {/* Main Level Background */}
         <div
           className="absolute inset-0 bg-cover bg-no-repeat"
           style={{
-            backgroundImage: "url('/assets/images/AA.jpg')",
+            backgroundImage: `url('${getLevelBackgroundImage(levelNumber)}')`,
             backgroundPosition: "center top",
           }}
         >
           <div className="absolute inset-0 bg-black/40" />
         </div>
 
-        <motion.div
-          className="absolute inset-0 bg-cover bg-no-repeat"
-          style={{
-            backgroundImage: "url('/assets/images/A.jpg')",
-            backgroundPosition: "center top",
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: success ? 1 : 0 }}
-          transition={{ duration: 1 }}
-        >
-          <div className="absolute inset-0 bg-black/40" />
-        </motion.div>
+        {/* Success Background Overlay */}
+        {success && (
+          <motion.div
+            className="absolute inset-0 bg-cover bg-no-repeat"
+            style={{
+              backgroundImage: `url('${getLevelBackgroundImage(levelNumber)}')`,
+              backgroundPosition: "center top",
+              filter: "brightness(1.2) saturate(1.3)",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          >
+            <div className="absolute inset-0 bg-green-500/20" />
+          </motion.div>
+        )}
       </div>
     </>
   );

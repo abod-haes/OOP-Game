@@ -128,7 +128,7 @@ export interface LevelGetAllResponse {
   previousPage: number | null;
 }
 
-const AUTH_BASE_URL = "http://roborescue.somee.com/api/authentication";
+const AUTH_BASE_URL = "https://roborescue.somee.com/api/authentication";
 
 // Enhanced session storage utilities with refresh logic
 // Helper function to decode JWT token and extract user ID

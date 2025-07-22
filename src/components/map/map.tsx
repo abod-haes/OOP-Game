@@ -40,6 +40,7 @@ function Map() {
   const router = useRouter();
   const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [rawSections, setRawSections] = useState<Section[]>([]);
   const [sections, setSections] = useState<SectionWithLevels[]>([]);
   const [isLoadingSections, setIsLoadingSections] = useState(true);
   const [userLevels, setUserLevels] = useState<UserLevel[]>([]);
@@ -93,7 +94,11 @@ function Map() {
 
   // Find user's last level
   const findUserLastLevel = useCallback(
-    (userLevels: UserLevel[], allLevels: Level[]): Level | null => {
+    (
+      userLevels: UserLevel[],
+      allLevels: Level[],
+      sectionsData: SectionWithLevels[]
+    ): Level | null => {
       if (userLevels.length === 0) return null;
 
       // Find the highest level number among user's completed levels
@@ -112,11 +117,11 @@ function Map() {
       if (nextLevel) return nextLevel;
 
       // If no next level in same section, find the first level of the next section
-      const currentSection = sections.find(
+      const currentSection = sectionsData.find(
         (s) => s.id === highestUserLevel.sectionId
       );
       if (currentSection) {
-        const nextSection = sections.find(
+        const nextSection = sectionsData.find(
           (s) => s.sectionNumber === currentSection.sectionNumber + 1
         );
         if (nextSection) {
@@ -134,7 +139,7 @@ function Map() {
       );
       return lastCompletedLevel || null;
     },
-    [sections]
+    []
   );
 
   useEffect(() => {
@@ -147,12 +152,7 @@ function Map() {
           const sortedSections = data.data.sort(
             (a, b) => a.sectionNumber - b.sectionNumber
           );
-          setSections(
-            sortedSections.map((section) => ({
-              ...section,
-              levels: [], // Initialize empty levels array
-            }))
-          );
+          setRawSections(sortedSections);
         } else {
           console.error("Failed to fetch sections");
         }
@@ -170,15 +170,15 @@ function Map() {
 
   // Update sections with their levels and find user's last level
   useEffect(() => {
-    if (allLevels.length > 0 && sections.length > 0) {
+    if (allLevels.length > 0 && rawSections.length > 0) {
       // Add levels to each section
-      const sectionsWithLevels = sections.map((section) => ({
+      const sectionsWithLevels = rawSections.map((section) => ({
         ...section,
         levels: allLevels
           .filter((level) => level.sectionId === section.id)
           .sort((a, b) => a.levelNumber - b.levelNumber), // Sort levels by level number
       }));
-
+      console.log(sectionsWithLevels);
       setSections(sectionsWithLevels);
 
       // Update Zustand store with sections data
@@ -191,12 +191,16 @@ function Map() {
       setStoreSections(storeSectionsData);
 
       // Find user's last level
-      const lastLevel = findUserLastLevel(userLevels, allLevels);
+      const lastLevel = findUserLastLevel(
+        userLevels,
+        allLevels,
+        sectionsWithLevels
+      );
       setUserLastLevel(lastLevel);
 
       console.log("User's last level:", lastLevel);
     }
-  }, [allLevels, userLevels, sections, setStoreSections, findUserLastLevel]);
+  }, [allLevels, userLevels, rawSections, setStoreSections, findUserLastLevel]);
 
   const handleLevelClick = (sectionId: string, targetLevelId?: string) => {
     // Check if user is authenticated

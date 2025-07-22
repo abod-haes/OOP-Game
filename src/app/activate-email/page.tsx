@@ -196,7 +196,7 @@ function ActivateEmailContent() {
             </motion.div>
           </form>
 
-          <motion.div variants={itemVariants} className="mt-6 text-center">
+          {/* <motion.div variants={itemVariants} className="mt-6 text-center">
             <p className="text-sm text-white/60">
               Didn&apos;t receive the code?{" "}
               <button
@@ -210,7 +210,7 @@ function ActivateEmailContent() {
                 Resend Code
               </button>
             </p>
-          </motion.div>
+          </motion.div> */}
 
           <motion.p
             variants={itemVariants}
