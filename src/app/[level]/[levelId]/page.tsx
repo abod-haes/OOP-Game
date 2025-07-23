@@ -20,21 +20,44 @@ import {
 
 // Import custom hook
 import { useLevel } from "@/app/hooks/useLevel";
+import { getUserLastLevels, sessionUtils } from "@/lib/api/client";
 
 export default function LabGamePage() {
   const params = useParams();
-  const router = useRouter();
   const levelId = params.levelId as string;
   const [mounted, setMounted] = useState(false);
   const [robotVisible, setRobotVisible] = useState(false);
+  const router = useRouter();
+  useEffect(() => {
+    const fetchUserLevels = async () => {
+      const userId = sessionUtils.getUserId();
 
+      if (userId && sessionUtils.isAuthenticated()) {
+        try {
+          const res = await getUserLastLevels(userId);
+          const data = res.data;
+          if (data && data[0].levelNumber <= (levelData?.levelNumber ?? 0))
+            router.push(`/`);
+          // User levels fetched successfully
+        } catch (error) {
+          console.error("Error fetching user levels:", error);
+        }
+      } else {
+        router.push("/");
+      }
+    };
+
+    fetchUserLevels();
+  }, []);
   // Zustand store
   const {
     nextLevel,
     setCurrentLevel,
     setNextLevel,
     findNextLevel,
+    isLastLevel,
     getSectionByLevelId,
+    sections,
   } = useGameStore();
 
   // Use custom hook for level logic
@@ -62,13 +85,31 @@ export default function LabGamePage() {
 
   // Set current level in store when levelData is loaded
   useEffect(() => {
-    if (levelData) {
+    if (levelData && sections.length > 0) {
       setCurrentLevel(levelData);
-      // Find and set next level
+
+      // Use store functions to find next level and current section
       const next = findNextLevel(levelData.id);
+      const currentSection = getSectionByLevelId(levelData.id);
+      const isLast = isLastLevel(levelData.id);
+
+      console.log("🔍 Page - Current level:", levelData);
+      console.log("🔍 Page - Current section:", currentSection);
+      console.log("🔍 Page - Next level:", next);
+      console.log("🔍 Page - Is last level:", isLast);
+      console.log("🔍 Page - Sections available:", sections.length);
+
       setNextLevel(next);
     }
-  }, [levelData, setCurrentLevel, setNextLevel, findNextLevel]);
+  }, [
+    levelData,
+    sections,
+    setCurrentLevel,
+    setNextLevel,
+    findNextLevel,
+    getSectionByLevelId,
+    isLastLevel,
+  ]);
 
   const robotMessages = [
     "👋 Hello there! I'm your lab assistant robot.",
@@ -90,13 +131,37 @@ export default function LabGamePage() {
 
   // Handle level completion and navigation to next level
   const handleLevelComplete = () => {
+    console.log("🔍 handleLevelComplete - nextLevel:", nextLevel);
+    console.log("🔍 handleLevelComplete - current levelId:", levelId);
+
     if (nextLevel) {
       // Navigate to next level after a short delay
       setTimeout(() => {
         const currentSection = getSectionByLevelId(levelId);
+        console.log("🔍 handleLevelComplete - currentSection:", currentSection);
+        console.log(
+          "🔍 handleLevelComplete - navigating to:",
+          `/${currentSection?.sectionId}/${nextLevel.id}`
+        );
+
         if (currentSection) {
           router.push(`/${currentSection.sectionId}/${nextLevel.id}`);
         }
+      }, 2000);
+    } else if (isLastLevel(levelId)) {
+      // User completed the last level of the game
+      console.log(
+        "🔍 handleLevelComplete - last level completed, redirecting to map"
+      );
+      setTimeout(() => {
+        router.push("/"); // Redirect to map/home
+      }, 2000);
+    } else {
+      console.log(
+        "🔍 handleLevelComplete - no next level and not last level, redirecting to map"
+      );
+      setTimeout(() => {
+        router.push("/"); // Redirect to map/home
       }, 2000);
     }
   };
@@ -139,6 +204,12 @@ export default function LabGamePage() {
           success={success}
           showLights={showLights}
           fadeOutLights={fadeOutLights}
+          levelNumber={levelData?.levelNumber}
+          sectionNumber={
+            sections.find(
+              (section) => section.sectionId === levelData?.sectionId
+            )?.sectionNumber
+          }
         />
 
         {/* Main Content */}

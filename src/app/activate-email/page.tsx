@@ -196,22 +196,6 @@ function ActivateEmailContent() {
             </motion.div>
           </form>
 
-          {/* <motion.div variants={itemVariants} className="mt-6 text-center">
-            <p className="text-sm text-white/60">
-              Didn&apos;t receive the code?{" "}
-              <button
-                type="button"
-                className="font-medium text-white hover:text-metallic-accent transition-colors"
-                onClick={() => {
-                  // TODO: Implement resend functionality
-                  alert("Resend functionality will be implemented here");
-                }}
-              >
-                Resend Code
-              </button>
-            </p>
-          </motion.div> */}
-
           <motion.p
             variants={itemVariants}
             className="mt-6 text-center text-sm text-white/60"

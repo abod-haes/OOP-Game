@@ -21,7 +21,7 @@ export function useLevel(levelId: string) {
   const [isCompiling, setIsCompiling] = useState(false);
 
   // Audio state
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -95,6 +95,7 @@ export function useLevel(levelId: string) {
     try {
       // Get current user ID
       const userId = sessionUtils.getUserId();
+      console.log(userId);
       if (!userId) {
         console.error("User not authenticated");
         return;

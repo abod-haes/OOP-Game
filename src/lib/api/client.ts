@@ -214,7 +214,7 @@ export const sessionUtils = {
 
     // Try to extract user ID from access token
     const decodedToken = await decodeJWT(tokens.accessToken);
-
+    console.log(decodedToken, "decoded");
     if (decodedToken.userId) {
       sessionStorage.setItem("userId", decodedToken.userId);
     } else {
@@ -552,18 +552,10 @@ export async function signIn(
 
     const tokens: AuthResponse = await response.json();
 
-    console.log("🔐 Sign-in successful!");
-    console.log("  - Email:", credentials.email);
-    console.log("  - Access token length:", tokens.accessToken?.length || 0);
-    console.log("  - Refresh token length:", tokens.refreshToken?.length || 0);
-    console.log("  - User ID in response:", tokens.userId || "Not provided");
-
     // Store tokens in session
     await sessionUtils.setTokens(tokens);
 
     // Log the final user ID after storage
-    const finalUserId = sessionUtils.getUserId();
-    console.log("🎉 Login complete! User ID:", finalUserId);
 
     return {
       success: true,

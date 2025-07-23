@@ -5,6 +5,7 @@ interface LevelBackgroundProps {
   showLights: boolean;
   fadeOutLights: boolean;
   levelNumber?: number;
+  sectionNumber?: number;
 }
 
 export function LevelBackground({
@@ -12,6 +13,7 @@ export function LevelBackground({
   showLights,
   fadeOutLights,
   levelNumber,
+  sectionNumber,
 }: LevelBackgroundProps) {
   // Function to get level background image based on level number
   const getLevelBackgroundImage = (levelNumber?: number): string => {
@@ -22,14 +24,10 @@ export function LevelBackground({
       2: "/assets/images/B.jpg",
       3: "/assets/images/C.jpg",
       4: "/assets/images/D.jpg",
-      5: "/assets/images/E.jpg",
-      6: "/assets/images/AA.jpg",
-      7: "/assets/images/BB.jpg",
-      8: "/assets/images/CC.jpg",
-      9: "/assets/images/D1.png",
-      10: "/assets/images/D2.png",
-      11: "/assets/images/D3.png",
-      12: "/assets/images/D4.png",
+      5: "/assets/images/AA.jpg",
+      6: "/assets/images/BB.jpg",
+      7: "/assets/images/CC.jpg",
+      8: "/assets/images/D4.png",
     };
 
     return levelImageMap[levelNumber] || "/assets/images/A.jpg";
@@ -84,7 +82,9 @@ export function LevelBackground({
         <div
           className="absolute inset-0 bg-cover bg-no-repeat"
           style={{
-            backgroundImage: `url('${getLevelBackgroundImage(levelNumber)}')`,
+            backgroundImage: `url('${getLevelBackgroundImage(
+              (sectionNumber || 1) + 4
+            )}')`,
             backgroundPosition: "center top",
           }}
         >
@@ -96,7 +96,9 @@ export function LevelBackground({
           <motion.div
             className="absolute inset-0 bg-cover bg-no-repeat"
             style={{
-              backgroundImage: `url('${getLevelBackgroundImage(levelNumber)}')`,
+              backgroundImage: `url('${getLevelBackgroundImage(
+                sectionNumber
+              )}')`,
               backgroundPosition: "center top",
               filter: "brightness(1.2) saturate(1.3)",
             }}
@@ -104,7 +106,7 @@ export function LevelBackground({
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
           >
-            <div className="absolute inset-0 bg-green-500/20" />
+            {/* <div className="absolute inset-0 bg-yellow-400/20" /> */}
           </motion.div>
         )}
       </div>

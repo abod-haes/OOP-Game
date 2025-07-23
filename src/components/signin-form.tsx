@@ -87,15 +87,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
 
       if (result.success) {
         setIsSuccess(true);
-        console.log("✅ Sign-in form: Authentication successful");
 
         // Get the user ID after successful sign-in
         const userId = sessionUtils.getUserId();
         console.log("👤 Sign-in form: Final User ID:", userId);
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
         onSubmit(true, "Successfully signed in!");
-        // Redirect to home page
         router.push("/");
       } else {
         console.log("❌ Sign-in form: Authentication failed:", result.error);
