@@ -42,7 +42,7 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Add the robot toast hook
-  const { showRobotError, showRobotSuccess } = useRobotMessage();
+  const { showRobotPersistent } = useRobotMessage();
 
   // Process the code to replace \n with actual newlines
   const processCode = (code: string) => {
@@ -63,7 +63,9 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
         const errorMessage =
           "No code entered. Please enter some Java code to check syntax.";
         console.log("🔍 Syntax Check - Empty Code:", errorMessage);
-        showRobotError(errorMessage);
+        showRobotPersistent(errorMessage, {
+          showCloseButton: true,
+        });
         return;
       }
 
@@ -77,7 +79,7 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
         timestamp: new Date().toISOString(),
       });
 
-      // Show toast message based on validation result
+      // Show persistent toast message based on validation result
       if (!validation.isValid) {
         const errorCount = validation.errors.length;
 
@@ -107,15 +109,19 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
           });
         });
 
-        showRobotError(detailedErrorMessage);
+        showRobotPersistent(detailedErrorMessage, {
+          showCloseButton: false,
+        });
       } else {
         const successMessage =
           "✅ Java syntax is valid! Your code is ready to compile and run.";
         console.log("✅ Syntax Check - Success:", successMessage);
-        showRobotSuccess(successMessage);
+        showRobotPersistent(successMessage, {
+          showCloseButton: false,
+        });
       }
     },
-    [enableSyntaxCheck, showRobotError, showRobotSuccess]
+    [enableSyntaxCheck, showRobotPersistent]
   );
 
   // Handle editor change
