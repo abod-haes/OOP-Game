@@ -21,12 +21,33 @@ export function useLevel(levelId: string) {
   const [isCompiling, setIsCompiling] = useState(false);
 
   // Audio state
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const successAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Robot toast hook
   const { showRobotPersistent, hideRobotMessage } = useRobotMessage();
+
+  // Cleanup audio on unmount or level change
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      if (successAudioRef.current) {
+        successAudioRef.current.pause();
+        successAudioRef.current.currentTime = 0;
+        successAudioRef.current = null;
+      }
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+    };
+  }, [levelId]);
 
   // Fetch level data
   useEffect(() => {
@@ -163,66 +184,59 @@ export function useLevel(levelId: string) {
     }
   };
 
-  // Audio effects
+  // Audio effects - Success sound
   useEffect(() => {
     if (success && audioEnabled) {
-      const powerOnAudio = new Audio("/assets/audio/power-on.mp3");
-      powerOnAudio.volume = 0.5;
-      powerOnAudio.play().catch((err) => {
+      // Reuse existing audio object or create new one
+      if (!successAudioRef.current) {
+        successAudioRef.current = new Audio("/assets/audio/power-on.mp3");
+        successAudioRef.current.volume = 0.5;
+      }
+
+      successAudioRef.current.currentTime = 0;
+      successAudioRef.current.play().catch((err) => {
         console.error("Power-on audio playback failed:", err);
       });
     }
   }, [success, audioEnabled]);
 
-  // Loop error sound if not successful
+  // Audio effects - Error sound (only when not successful and audio enabled)
   useEffect(() => {
     if (!audioEnabled) return;
 
     if (!success) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.onended = null;
+      // Clear any existing timeout
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
       }
 
-      const errorAudio = new Audio("/assets/audio/error-robot.mp3");
-      errorAudio.volume = 0.5;
-      audioRef.current = errorAudio;
+      // Reuse existing audio object or create new one
+      if (!audioRef.current) {
+        audioRef.current = new Audio("/assets/audio/error-robot.mp3");
+        audioRef.current.volume = 0.5;
+      }
 
       // Play sound once after 0.5s delay
       timeoutIdRef.current = setTimeout(() => {
         if (audioRef.current && !success && audioEnabled) {
+          audioRef.current.currentTime = 0;
           audioRef.current.play().catch((error) => {
             console.log("Audio playback failed:", error);
           });
         }
       }, 500);
     } else {
+      // Clear error audio when successful
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
-        audioRef.current.onended = null;
-        audioRef.current = null;
       }
-
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
       }
     }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current.onended = null;
-        audioRef.current = null;
-      }
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-        timeoutIdRef.current = null;
-      }
-    };
   }, [success, audioEnabled]);
 
   return {

@@ -58,7 +58,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    // Check if user previously enabled remember me
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("rememberMe") === "true";
+    }
+    return false;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +80,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
     }
 
     console.log("👤 User attempting to sign in:", email.trim());
+    console.log("🔐 Remember me:", remember);
     setIsSubmitting(true);
 
     try {
@@ -83,7 +90,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
         fcm: "", // You can make this dynamic if needed
       };
 
-      const result = await signIn(credentials);
+      const result = await signIn(credentials, remember);
 
       if (result.success) {
         setIsSuccess(true);
@@ -91,6 +98,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
         // Get the user ID after successful sign-in
         const userId = sessionUtils.getUserId();
         console.log("👤 Sign-in form: Final User ID:", userId);
+        console.log(
+          "🔐 Remember me enabled:",
+          sessionUtils.isRememberMeEnabled()
+        );
 
         onSubmit(true, "Successfully signed in!");
         router.push("/");
@@ -243,13 +254,20 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
                 id="remember-me"
               />
             </div>
-            <label
-              htmlFor="remember-me"
-              className="text-sm text-white/80 cursor-pointer hover:text-white transition-colors"
-              onClick={() => setRemember(!remember)}
-            >
-              Keep me signed in
-            </label>
+            <div className="flex flex-col">
+              <label
+                htmlFor="remember-me"
+                className="text-sm text-white/80 cursor-pointer hover:text-white transition-colors"
+                onClick={() => setRemember(!remember)}
+              >
+                Keep me signed in
+              </label>
+              <span className="text-xs text-white/50">
+                {remember
+                  ? "You'll stay signed in even after closing the browser"
+                  : "Sign out when you close the browser"}
+              </span>
+            </div>
           </div>
           {/* <a
                         href="#"

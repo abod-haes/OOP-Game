@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "@/components/providers";
-import CustomCursor from "@/components/ui/custom-cursor";
 import NavigationLoaderProvider from "@/components/ui/navigation-loader-provider";
 import LayoutWrapper from "./layout-wrapper";
+// import { AuthDebug } from "@/components/auth-debug";
 
 export const metadata: Metadata = {
   title: "OOP Game",
@@ -18,12 +18,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <CustomCursor />
         <NavigationLoaderProvider>
           <LayoutWrapper>
             <Providers>{children}</Providers>
           </LayoutWrapper>
         </NavigationLoaderProvider>
+        {/* Disabled AuthDebug to reduce memory usage */}
+        {/* <AuthDebug /> */}
       </body>
     </html>
   );

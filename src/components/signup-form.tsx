@@ -5,7 +5,12 @@ import * as lucideReact from "lucide-react";
 import { HoverButton } from "./ui/hover-button";
 import { motion } from "framer-motion";
 import FormInput from "./ui/form-input";
-import { signUp, SignUpRequest, signInWithGoogle } from "@/lib/api/client";
+import {
+  signUp,
+  SignUpRequest,
+  signInWithGoogle,
+  sessionUtils,
+} from "@/lib/api/client";
 
 interface SignUpFormProps {
   onSubmit: (success: boolean, message?: string) => void;
@@ -57,7 +62,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    // Check if user previously enabled remember me
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("rememberMe") === "true";
+    }
+    return false;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,6 +90,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
       return;
     }
 
+    console.log("🔐 Remember me:", remember);
     setIsSubmitting(true);
 
     try {
@@ -90,10 +102,14 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
         email: email.trim(),
       };
 
-      const result = await signUp(userData);
+      const result = await signUp(userData, remember);
 
       if (result.success) {
         setIsSuccess(true);
+        console.log(
+          "🔐 Remember me enabled:",
+          sessionUtils.isRememberMeEnabled()
+        );
         // Redirect to email activation page with email as query parameter
         await new Promise((resolve) => setTimeout(resolve, 1000));
         router.push(
@@ -304,13 +320,20 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
                 id="remember-me"
               />
             </div>
-            <label
-              htmlFor="remember-me"
-              className="text-sm text-white/80 cursor-pointer hover:text-white transition-colors"
-              onClick={() => setRemember(!remember)}
-            >
-              Keep me signed in
-            </label>
+            <div className="flex flex-col">
+              <label
+                htmlFor="remember-me"
+                className="text-sm text-white/80 cursor-pointer hover:text-white transition-colors"
+                onClick={() => setRemember(!remember)}
+              >
+                Keep me signed in
+              </label>
+              <span className="text-xs text-white/50">
+                {remember
+                  ? "You'll stay signed in even after closing the browser"
+                  : "Sign out when you close the browser"}
+              </span>
+            </div>
           </div>
         </motion.div>
 

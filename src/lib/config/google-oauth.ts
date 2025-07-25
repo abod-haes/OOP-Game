@@ -4,19 +4,34 @@
  */
 
 // Google OAuth configuration
-export const GOOGLE_CLIENT_ID =
-  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-  "59527742030-6ofkgcg526usjvue4phh0veq8017qt3b.apps.googleusercontent.com";
-export const GOOGLE_CLIENT_SECRET =
-  process.env.GOOGLE_CLIENT_SECRET || "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";
+export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+
+// Validate required environment variables
+if (!GOOGLE_CLIENT_ID) {
+  throw new Error(
+    "NEXT_PUBLIC_GOOGLE_CLIENT_ID environment variable is required"
+  );
+}
+
+if (!GOOGLE_CLIENT_SECRET) {
+  throw new Error("GOOGLE_CLIENT_SECRET environment variable is required");
+}
 
 // Debug logging
 console.log("Environment variables:");
 console.log(
   "NEXT_PUBLIC_GOOGLE_CLIENT_ID:",
-  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? "Set" : "Not set"
 );
-console.log("GOOGLE_CLIENT_ID (final):", GOOGLE_CLIENT_ID);
+console.log(
+  "GOOGLE_CLIENT_SECRET:",
+  process.env.GOOGLE_CLIENT_SECRET ? "Set" : "Not set"
+);
+console.log(
+  "GOOGLE_CLIENT_ID (final):",
+  GOOGLE_CLIENT_ID ? "Configured" : "Not configured"
+);
 
 // Get the base URL from environment or use default
 const getBaseUrl = () => {

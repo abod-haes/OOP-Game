@@ -43,11 +43,14 @@ function GoogleCallbackContent() {
           console.log("  - Access token length:", accessToken.length);
           console.log("  - Refresh token length:", refreshToken.length);
 
-          // Store tokens
-          await sessionUtils.setTokens({
-            accessToken,
-            refreshToken,
-          });
+          // Store tokens (Google sign-in defaults to remember me for better UX)
+          await sessionUtils.setTokens(
+            {
+              accessToken,
+              refreshToken,
+            },
+            true
+          );
 
           // Log user ID if available
           const userId = sessionUtils.getUserId();
@@ -130,12 +133,15 @@ function GoogleCallbackContent() {
             userData.userId || "Not provided"
           );
 
-          // Store tokens
-          await sessionUtils.setTokens({
-            accessToken: userData.accessToken,
-            refreshToken: userData.refreshToken,
-            userId: userData.userId,
-          });
+          // Store tokens (Google sign-in defaults to remember me for better UX)
+          await sessionUtils.setTokens(
+            {
+              accessToken: userData.accessToken,
+              refreshToken: userData.refreshToken,
+              userId: userData.userId,
+            },
+            true
+          );
 
           // Log user ID if available
           const userId = sessionUtils.getUserId();

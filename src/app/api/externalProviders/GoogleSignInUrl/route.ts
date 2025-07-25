@@ -3,11 +3,8 @@ import { generateGoogleSignInUrl } from "@/lib/config/google-oauth";
 
 export async function GET() {
   try {
-    console.log("Generating local Google sign-in URL...");
 
-    // Use local Google OAuth configuration with frontend callback URL
     const googleSignInUrl = generateGoogleSignInUrl();
-    console.log("Generated Google sign-in URL:", googleSignInUrl);
 
     return NextResponse.json({ url: googleSignInUrl }, { status: 200 });
   } catch (error) {

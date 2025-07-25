@@ -2,7 +2,36 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+Before running the application, you need to set up Google OAuth credentials:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the Google+ API and Google OAuth2 API
+4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
+5. Configure the OAuth consent screen
+6. Create a new OAuth 2.0 Client ID for a "Web application"
+7. Add these authorized redirect URIs:
+   - `http://localhost:3000/auth/google/callback`
+   - `http://localhost:3001/auth/google/callback`
+   - `http://localhost:3000/api/externalProviders/GoogleUserAccountData`
+
+### Environment Setup
+
+Create a `.env.local` file in the project root with your Google OAuth credentials:
+
+```bash
+# Google OAuth Configuration
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+
+# NextAuth Configuration (optional)
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_nextauth_secret_here
+```
+
+### Running the Development Server
 
 ```bash
 npm run dev

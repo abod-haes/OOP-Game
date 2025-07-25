@@ -313,31 +313,60 @@ function Map() {
           let overlayClass = "bg-gray-600/50"; // default gray overlay
           let isClickable = false;
 
-          // Find the highest section number the user has completed
-          const highestCompletedSectionNumber =
-            userLevels.length > 0
-              ? Math.max(
-                  ...userLevels.map((level) => {
-                    const section = sections.find(
-                      (s) => s.id === level.sectionId
-                    );
-                    return section ? section.sectionNumber : 0;
-                  })
-                )
-              : 0;
-
           // Check if this is the user's current section (where their last level is)
           const isUserCurrentSection =
             userLastLevel && userLastLevel.sectionId === e.id;
+
+          // Check if user has completed ALL levels in a section
+          const hasCompletedAllLevelsInSection = (sectionId: string) => {
+            const section = sections.find((s) => s.id === sectionId);
+            if (!section) return false;
+
+            const sectionLevels = section.levels;
+            const userLevelsInSection = userLevels.filter(
+              (level) => level.sectionId === sectionId
+            );
+
+            // User has completed all levels if they have completed as many levels as the section has
+            const isCompleted =
+              userLevelsInSection.length >= sectionLevels.length;
+
+            console.log(`Section ${section.sectionNumber} (${sectionId}):`, {
+              totalLevels: sectionLevels.length,
+              completedLevels: userLevelsInSection.length,
+              isCompleted: isCompleted,
+            });
+
+            return isCompleted;
+          };
+
+          // Check if user has completed ALL levels in the previous section
+          const previousSection = sections.find(
+            (s) => s.sectionNumber === e.sectionNumber - 1
+          );
+          const canAccessThisSection =
+            index === 0 || // First section is always available
+            (previousSection &&
+              hasCompletedAllLevelsInSection(previousSection.id)) || // Can access if previous section is fully completed
+            hasCompletedSection || // Can access if user has any progress in this section
+            isUserCurrentSection; // Can access if this is the user's current section
+
+          console.log(`Section ${e.sectionNumber} (${e.id}):`, {
+            index,
+            hasCompletedSection,
+            isUserCurrentSection,
+            previousSectionCompleted: previousSection
+              ? hasCompletedAllLevelsInSection(previousSection.id)
+              : "N/A",
+            canAccessThisSection,
+            isClickable: canAccessThisSection,
+          });
 
           if (hasCompletedSection || isUserCurrentSection) {
             sectionStatus = "completed";
             overlayClass = "bg-green-500/30"; // green overlay for completed
             isClickable = true;
-          } else if (
-            index === 0 || // First section is always available
-            e.sectionNumber <= highestCompletedSectionNumber + 1 // Next section after highest completed
-          ) {
+          } else if (canAccessThisSection) {
             sectionStatus = "current";
             overlayClass = "bg-blue-500/30"; // blue overlay for current
             isClickable = true;

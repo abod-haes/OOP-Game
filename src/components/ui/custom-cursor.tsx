@@ -1,37 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 export default function CustomCursor() {
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [isClicking, setIsClicking] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isClicking, setIsClicking] = useState(false);
+  const lastUpdateRef = useRef<number>(0);
+  const throttleDelay = 16; // ~60fps
 
-    useEffect(() => {
-        const updateMousePosition = (e: MouseEvent) => {
-            setPosition({ x: e.clientX, y: e.clientY });
-        };
+  const updateMousePosition = useCallback((e: MouseEvent) => {
+    const now = Date.now();
+    if (now - lastUpdateRef.current < throttleDelay) return;
+    lastUpdateRef.current = now;
 
-        const handleMouseDown = () => setIsClicking(true);
-        const handleMouseUp = () => setIsClicking(false);
+    setPosition({ x: e.clientX, y: e.clientY });
+  }, []);
 
-        document.addEventListener("mousemove", updateMousePosition);
-        document.addEventListener("mousedown", handleMouseDown);
-        document.addEventListener("mouseup", handleMouseUp);
+  const handleMouseDown = useCallback(() => setIsClicking(true), []);
+  const handleMouseUp = useCallback(() => setIsClicking(false), []);
 
-        return () => {
-            document.removeEventListener("mousemove", updateMousePosition);
-            document.removeEventListener("mousedown", handleMouseDown);
-            document.removeEventListener("mouseup", handleMouseUp);
-        };
-    }, []);
+  useEffect(() => {
+    document.addEventListener("mousemove", updateMousePosition, {
+      passive: true,
+    });
+    document.addEventListener("mousedown", handleMouseDown, { passive: true });
+    document.addEventListener("mouseup", handleMouseUp, { passive: true });
 
-    return (
-        <div
-            className={`custom-cursor ${isClicking ? "clicking" : ""}`}
-            style={{
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-            }}
-        />
-    );
+    return () => {
+      document.removeEventListener("mousemove", updateMousePosition);
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [updateMousePosition, handleMouseDown, handleMouseUp]);
+
+  return (
+    <div
+      className={`custom-cursor ${isClicking ? "clicking" : ""}`}
+      style={{
+        left: `${position.x}px`,
+        top: `${position.y}px`,
+      }}
+    />
+  );
 }

@@ -31,7 +31,7 @@ export default function LabGamePage() {
   useEffect(() => {
     const fetchUserLevels = async () => {
       const userId = sessionUtils.getUserId();
-
+      console.log(userId, sessionUtils.isAuthenticated());
       if (userId && sessionUtils.isAuthenticated()) {
         try {
           const res = await getUserLastLevels(userId);
@@ -88,28 +88,11 @@ export default function LabGamePage() {
     if (levelData && sections.length > 0) {
       setCurrentLevel(levelData);
 
-      // Use store functions to find next level and current section
       const next = findNextLevel(levelData.id);
-      const currentSection = getSectionByLevelId(levelData.id);
-      const isLast = isLastLevel(levelData.id);
-
-      console.log("🔍 Page - Current level:", levelData);
-      console.log("🔍 Page - Current section:", currentSection);
-      console.log("🔍 Page - Next level:", next);
-      console.log("🔍 Page - Is last level:", isLast);
-      console.log("🔍 Page - Sections available:", sections.length);
 
       setNextLevel(next);
     }
-  }, [
-    levelData,
-    sections,
-    setCurrentLevel,
-    setNextLevel,
-    findNextLevel,
-    getSectionByLevelId,
-    isLastLevel,
-  ]);
+  }, [levelData, sections, setCurrentLevel, setNextLevel, findNextLevel]);
 
   const robotMessages = [
     "👋 Hello there! I'm your lab assistant robot.",
@@ -131,9 +114,6 @@ export default function LabGamePage() {
 
   // Handle level completion and navigation to next level
   const handleLevelComplete = () => {
-    console.log("🔍 handleLevelComplete - nextLevel:", nextLevel);
-    console.log("🔍 handleLevelComplete - current levelId:", levelId);
-
     if (nextLevel) {
       // Navigate to next level after a short delay
       setTimeout(() => {
@@ -215,7 +195,7 @@ export default function LabGamePage() {
         {/* Main Content */}
         {!success ? (
           <div className="relative z-20 flex flex-col items-center justify-center min-h-screen p-8">
-            <LevelHeader levelData={levelData} success={success} />
+            <LevelHeader levelData={levelData} success={!success} />
 
             <LevelDialog
               isDialogOpen={isDialogOpen}

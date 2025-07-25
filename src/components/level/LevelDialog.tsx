@@ -34,7 +34,15 @@ export function LevelDialog({
           Start Coding
         </HoverButton>
       </DialogTrigger>
-      <DialogContent className="max-w-7xl min-h-[70vh] max-h-[90vh] overflow-hidden justify-center flex flex-col">
+      <DialogContent
+        className="max-w-7xl min-h-[70vh] max-h-[90vh] overflow-hidden justify-center flex flex-col"
+        onPointerDownOutside={(e) => {
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           {/* Dialog title can be added here if needed */}
         </DialogHeader>

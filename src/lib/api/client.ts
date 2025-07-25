@@ -130,105 +130,105 @@ export interface LevelGetAllResponse {
 
 const AUTH_BASE_URL = "https://roborescue.somee.com/api/authentication";
 
-// Enhanced session storage utilities with refresh logic
-// Helper function to decode JWT token and extract user ID
-// Helper function to generate a hash from a string
-const generateHash = async (str: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-};
+// const generateHash = async (str: string): Promise<string> => {
+//   const encoder = new TextEncoder();
+//   const data = encoder.encode(str);
+//   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+//   const hashArray = Array.from(new Uint8Array(hashBuffer));
+//   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+// };
 
-const decodeJWT = async (token: string): Promise<{ userId?: string }> => {
-  try {
-    // Check if this is a JWT token (has 3 parts separated by dots)
-    const parts = token.split(".");
-    if (parts.length === 3) {
-      // This is a JWT token
-      const base64Url = parts[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split("")
-          .map(function (c) {
-            return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-          })
-          .join("")
-      );
+// const decodeJWT = async (token: string): Promise<{ userId?: string }> => {
+//   try {
+//     // Check if this is a JWT token (has 3 parts separated by dots)
+//     const parts = token.split(".");
+//     if (parts.length === 3) {
+//       // This is a JWT token
+//       const base64Url = parts[1];
+//       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+//       const jsonPayload = decodeURIComponent(
+//         atob(base64)
+//           .split("")
+//           .map(function (c) {
+//             return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+//           })
+//           .join("")
+//       );
 
-      const payload = JSON.parse(jsonPayload);
+//       const payload = JSON.parse(jsonPayload);
 
-      // Try multiple possible field names for user ID
-      const userId =
-        payload.userId ||
-        payload.sub ||
-        payload.id ||
-        payload.Id ||
-        payload.user_id ||
-        payload.userid;
+//       // Try multiple possible field names for user ID
+//       const userId =
+//         payload.userId ||
+//         payload.sub ||
+//         payload.id ||
+//         payload.Id ||
+//         payload.user_id ||
+//         payload.userid;
 
-      return {
-        userId: userId,
-      };
-    } else {
-      // This is not a JWT token (opaque token)
-      // For opaque tokens, we need to extract user ID differently
-      try {
-        // Try to decode as base64
-        const decoded = atob(token);
+//       return {
+//         userId: userId,
+//       };
+//     } else {
+//       // This is not a JWT token (opaque token)
+//       // For opaque tokens, we need to extract user ID differently
+//       try {
+//         // Try to decode as base64
+//         const decoded = atob(token);
 
-        // Look for user ID patterns in the decoded token
-        const userIdMatch = decoded.match(/(\d{15,})/); // Look for long numbers (likely user IDs)
-        if (userIdMatch) {
-          const userId = userIdMatch[1];
-          return { userId };
-        }
-      } catch {
-        // Token is not base64 encoded
-      }
+//         // Look for user ID patterns in the decoded token
+//         const userIdMatch = decoded.match(/(\d{15,})/); // Look for long numbers (likely user IDs)
+//         if (userIdMatch) {
+//           const userId = userIdMatch[1];
+//           return { userId };
+//         }
+//       } catch {
+//         // Token is not base64 encoded
+//       }
 
-      // Try to extract user ID from the token string itself
-      const userIdMatch = token.match(/(\d{15,})/); // Look for long numbers
-      if (userIdMatch) {
-        const userId = userIdMatch[1];
-        return { userId };
-      }
+//       // Try to extract user ID from the token string itself
+//       const userIdMatch = token.match(/(\d{15,})/); // Look for long numbers
+//       if (userIdMatch) {
+//         const userId = userIdMatch[1];
+//         return { userId };
+//       }
 
-      // Generate a user ID from the token hash
-      const tokenHash = await generateHash(token);
-      const generatedUserId = tokenHash.substring(0, 20); // Take first 20 characters
-      return { userId: generatedUserId };
-    }
-  } catch (error) {
-    console.error("Error decoding token:", error);
-    return {};
-  }
-};
+//       // Generate a user ID from the token hash
+//       const tokenHash = await generateHash(token);
+//       const generatedUserId = tokenHash.substring(0, 20); // Take first 20 characters
+//       return { userId: generatedUserId };
+//     }
+//   } catch (error) {
+//     console.error("Error decoding token:", error);
+//     return {};
+//   }
+// };
 
 export const sessionUtils = {
-  setTokens: async (tokens: AuthResponse) => {
-    sessionStorage.setItem("accessToken", tokens.accessToken);
-    sessionStorage.setItem("refreshToken", tokens.refreshToken);
+  setTokens: async (tokens: AuthResponse, rememberMe: boolean = false) => {
+    const storage = rememberMe ? localStorage : sessionStorage;
 
-    // Try to extract user ID from access token
-    const decodedToken = await decodeJWT(tokens.accessToken);
-    console.log(decodedToken, "decoded");
-    if (decodedToken.userId) {
-      sessionStorage.setItem("userId", decodedToken.userId);
-    } else {
-      // Fallback: use user ID from response if provided
-      if (tokens.userId) {
-        sessionStorage.setItem("userId", tokens.userId);
-      }
+    storage.setItem("accessToken", tokens.accessToken);
+    storage.setItem("refreshToken", tokens.refreshToken);
+    storage.setItem("rememberMe", rememberMe.toString());
+    console.log(tokens);
+    if (tokens.userId) {
+      storage.setItem("userId", tokens.userId);
     }
   },
 
   getTokens: (): AuthResponse | null => {
-    const accessToken = sessionStorage.getItem("accessToken");
-    const refreshToken = sessionStorage.getItem("refreshToken");
-    const userId = sessionStorage.getItem("userId");
+    // Check localStorage first (for "remember me" users)
+    let accessToken = localStorage.getItem("accessToken");
+    let refreshToken = localStorage.getItem("refreshToken");
+    let userId = localStorage.getItem("userId");
+
+    // If not in localStorage, check sessionStorage
+    if (!accessToken || !refreshToken) {
+      accessToken = sessionStorage.getItem("accessToken");
+      refreshToken = sessionStorage.getItem("refreshToken");
+      userId = sessionStorage.getItem("userId");
+    }
 
     if (accessToken && refreshToken) {
       return { accessToken, refreshToken, userId: userId || undefined };
@@ -237,17 +237,29 @@ export const sessionUtils = {
   },
 
   clearTokens: () => {
+    // Clear from both storages to be safe
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("refreshToken");
     sessionStorage.removeItem("userId");
+    sessionStorage.removeItem("rememberMe");
+
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("rememberMe");
   },
 
   getUserId: (): string | null => {
-    return sessionStorage.getItem("userId");
+    // Check localStorage first, then sessionStorage
+    return localStorage.getItem("userId") || sessionStorage.getItem("userId");
   },
 
   isAuthenticated: (): boolean => {
     return sessionUtils.getTokens() !== null;
+  },
+
+  isRememberMeEnabled: (): boolean => {
+    return localStorage.getItem("rememberMe") === "true";
   },
 
   // New method to refresh tokens
@@ -477,11 +489,10 @@ export async function handleApiResponse<T>(
 
 // Authentication API service
 export async function signUp(
-  userData: SignUpRequest
+  userData: SignUpRequest,
+  rememberMe: boolean = false
 ): Promise<ApiResponse<AuthResponse>> {
   try {
-    console.log("🚀 Starting sign-up process for:", userData.email);
-
     const response = await fetch(`${AUTH_BASE_URL}/signup`, {
       method: "POST",
       headers: {
@@ -499,19 +510,8 @@ export async function signUp(
 
     const tokens: AuthResponse = await response.json();
 
-    console.log("🔐 Sign-up successful!");
-    console.log("  - Email:", userData.email);
-    console.log("  - Username:", userData.userName);
-    console.log("  - Access token length:", tokens.accessToken?.length || 0);
-    console.log("  - Refresh token length:", tokens.refreshToken?.length || 0);
-    console.log("  - User ID in response:", tokens.userId || "Not provided");
-
-    // Store tokens in session
-    await sessionUtils.setTokens(tokens);
-
-    // Log the final user ID after storage
-    const finalUserId = sessionUtils.getUserId();
-    console.log("🎉 Registration complete! User ID:", finalUserId);
+    // Store tokens in session or localStorage based on rememberMe
+    await sessionUtils.setTokens(tokens, rememberMe);
 
     return {
       success: true,
@@ -530,11 +530,10 @@ export async function signUp(
 }
 
 export async function signIn(
-  credentials: SignInRequest
+  credentials: SignInRequest,
+  rememberMe: boolean = false
 ): Promise<ApiResponse<AuthResponse>> {
   try {
-    console.log("🚀 Starting sign-in process for:", credentials.email);
-
     const response = await fetch(`${AUTH_BASE_URL}/signin`, {
       method: "POST",
       headers: {
@@ -552,10 +551,8 @@ export async function signIn(
 
     const tokens: AuthResponse = await response.json();
 
-    // Store tokens in session
-    await sessionUtils.setTokens(tokens);
-
-    // Log the final user ID after storage
+    // Store tokens in session or localStorage based on rememberMe
+    await sessionUtils.setTokens(tokens, rememberMe);
 
     return {
       success: true,
@@ -574,7 +571,8 @@ export async function signIn(
 }
 
 export async function activateEmail(
-  activationData: EmailActivationRequest
+  activationData: EmailActivationRequest,
+  rememberMe: boolean = false
 ): Promise<ApiResponse<EmailActivationResponse>> {
   try {
     const response = await fetch(`/api/authentication/activeEmail`, {
@@ -594,8 +592,8 @@ export async function activateEmail(
 
     const tokens: EmailActivationResponse = await response.json();
 
-    // Store tokens in session
-    await sessionUtils.setTokens(tokens);
+    // Store tokens in session or localStorage based on rememberMe
+    await sessionUtils.setTokens(tokens, rememberMe);
 
     return {
       success: true,
