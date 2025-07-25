@@ -181,6 +181,7 @@ const JavaEditor: React.FC<JavaEditorProps> = ({
   // Cleanup debounce on unmount
   useEffect(() => {
     return () => {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       const currentDebounceRef = debounceRef.current;
       if (currentDebounceRef) {
         clearTimeout(currentDebounceRef);

@@ -12,7 +12,6 @@ export function LevelBackground({
   success,
   showLights,
   fadeOutLights,
-  levelNumber,
   sectionNumber,
 }: LevelBackgroundProps) {
   // Function to get level background image based on level number

@@ -48,7 +48,7 @@ export default function LabGamePage() {
     };
 
     fetchUserLevels();
-  }, []);
+  }, [levelId, router]);
   // Zustand store
   const {
     nextLevel,
