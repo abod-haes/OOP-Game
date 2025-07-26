@@ -148,19 +148,38 @@ export function useLevel(levelId: string) {
           }, 1000);
         }, 4000);
       } else {
-        // Handle checkCode failure
+        // Handle checkCode failure - check if error is an array of strings
         console.error("Code check failed:", checkResult.error);
-        // Show error message to user
-        showRobotPersistent(
-          `❌ Code check failed: ${checkResult.error || "Unknown error"}`,
-          {
-            showCloseButton: true,
+
+        let errorMessage = "❌ Code check failed: ";
+
+        if (checkResult.error) {
+          // Check if error is an array of strings
+          if (Array.isArray(checkResult.error)) {
+            errorMessage += checkResult.error.join("\n");
+          } else if (typeof checkResult.error === "string") {
+            errorMessage += checkResult.error;
+          } else {
+            errorMessage += "Unknown error occurred";
           }
-        );
+        } else {
+          errorMessage += "Unknown error occurred";
+        }
+
+        // Show error message to user
+        showRobotPersistent(errorMessage, {
+          showCloseButton: true,
+        });
       }
     } catch (error) {
       console.error("Error checking code:", error);
       // Handle error silently or show user feedback
+      showRobotPersistent(
+        "❌ An error occurred while checking your code. Please try again.",
+        {
+          showCloseButton: true,
+        }
+      );
     } finally {
       setIsCompiling(false);
     }

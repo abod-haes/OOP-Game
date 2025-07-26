@@ -10,6 +10,8 @@ import {
   updateUser,
   UserProfile,
   UpdateUserRequest,
+  getUserLastLevels,
+  UserLevel,
 } from "@/lib/api/client";
 import { HoverButton } from "@/components/ui/hover-button";
 import FormInput from "@/components/ui/form-input";
@@ -28,6 +30,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [userLastLevel, setUserLastLevel] = useState<UserLevel | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: "",
     lastName: "",
@@ -36,6 +39,7 @@ export default function ProfilePage() {
     birthDate: "",
   });
   const router = useRouter();
+
   useEffect(() => {
     // Check if user is authenticated
     if (!sessionUtils.isAuthenticated()) {
@@ -44,6 +48,7 @@ export default function ProfilePage() {
     }
 
     loadUserProfile();
+    loadUserLastLevel();
   }, [router]);
 
   const loadUserProfile = async () => {
@@ -85,6 +90,24 @@ export default function ProfilePage() {
       console.error("Error loading profile:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadUserLastLevel = async () => {
+    try {
+      const userId = sessionUtils.getUserId();
+      if (!userId) return;
+
+      const response = await getUserLastLevels(userId);
+      if (response.success && response.data && response.data.length > 0) {
+        // Find the highest level the user has completed
+        const highestLevel = response.data.reduce((highest, current) => {
+          return current.levelNumber > highest.levelNumber ? current : highest;
+        });
+        setUserLastLevel(highestLevel);
+      }
+    } catch (error) {
+      console.error("Error loading user's last level:", error);
     }
   };
 
@@ -206,7 +229,7 @@ export default function ProfilePage() {
           {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
           <HoverButton
             onClick={loadUserProfile}
-            className="mt-4 px-6 py-2 bg-metallic-accent/20 hover:bg-metallic-accent/30"
+            className="mt-4 px-6 py-2 flex gap-2 items-center bg-metallic-accent/20 hover:bg-metallic-accent/30"
           >
             <lucideReact.RefreshCw className="w-4 h-4 mr-2" />
             Retry
@@ -260,8 +283,20 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center gap-2 text-metallic-light/80">
                   <lucideReact.Trophy className="w-4 h-4" />
-                  <span className="text-sm">Level 5</span>
+                  <span className="text-sm">
+                    {userLastLevel
+                      ? `Level ${userLastLevel.levelNumber}`
+                      : "No levels completed"}
+                  </span>
                 </div>
+                {userLastLevel && (
+                  <div className="flex items-center gap-2 text-metallic-light/80">
+                    <lucideReact.Map className="w-4 h-4" />
+                    <span className="text-sm">
+                      Section {userLastLevel.sectionId}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
