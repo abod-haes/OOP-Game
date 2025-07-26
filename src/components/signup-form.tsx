@@ -116,8 +116,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({ onSubmit }) => {
           `/activate-email?email=${encodeURIComponent(email.trim())}`
         );
       } else {
-        setError(result.error || "Failed to create account");
-        onSubmit(false, result.error);
+        const errorMessage = Array.isArray(result.error)
+          ? result.error.join(", ")
+          : result.error || "Failed to create account";
+        setError(errorMessage);
+        onSubmit(false, errorMessage);
       }
     } catch (error) {
       const errorMessage =

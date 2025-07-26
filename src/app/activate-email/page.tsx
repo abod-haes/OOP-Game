@@ -59,7 +59,10 @@ function ActivateEmailContent() {
           router.push("/");
         }, 2000);
       } else {
-        setError(result.error || "Failed to activate email");
+        const errorMessage = Array.isArray(result.error)
+          ? result.error.join(", ")
+          : result.error || "Failed to activate email";
+        setError(errorMessage);
       }
     } catch (error) {
       const errorMessage =

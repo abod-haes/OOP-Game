@@ -106,9 +106,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
         onSubmit(true, "Successfully signed in!");
         router.push("/");
       } else {
-        console.log("❌ Sign-in form: Authentication failed:", result.error);
-        setError(result.error || "Failed to sign in");
-        onSubmit(false, result.error);
+        const errorMessage = Array.isArray(result.error)
+          ? result.error.join(", ")
+          : result.error || "Failed to sign in";
+        console.log("❌ Sign-in form: Authentication failed:", errorMessage);
+        setError(errorMessage);
+        onSubmit(false, errorMessage);
       }
     } catch (error) {
       const errorMessage =
