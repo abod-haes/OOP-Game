@@ -1,0 +1,17 @@
+# Google OAuth Configuration
+# Create a .env.local file in your project root with these values:
+
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=59527742030-8cvnm71q7blgfs7mbpn392f502m1u9im.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+
+# NextAuth Configuration (optional)
+NEXTAUTH_URL=http://localhost:3000
+
+# Instructions:
+# 1. Create a file named .env.local in your project root directory
+# 2. Copy the above content into the .env.local file
+# 3. Save the file
+# 4. Restart your development server (npm run dev)
+
+# Note: The .env.local file is already configured to be ignored by git
+# so your credentials won't be committed to version control. 

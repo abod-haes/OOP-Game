@@ -40,7 +40,7 @@ export interface AuthResponse {
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
-  error?: string;
+  error?: string | string[];
 }
 
 // New interfaces for token refresh
@@ -211,9 +211,10 @@ export const sessionUtils = {
     storage.setItem("accessToken", tokens.accessToken);
     storage.setItem("refreshToken", tokens.refreshToken);
     storage.setItem("rememberMe", rememberMe.toString());
-    console.log(tokens);
+    console.log("Setting tokens:", tokens);
     if (tokens.userId) {
       storage.setItem("userId", tokens.userId);
+      console.log("Stored userId:", tokens.userId);
     }
   },
 
@@ -656,7 +657,10 @@ export async function signInWithGoogle(): Promise<void> {
       // Redirect to Google OAuth
       window.location.href = result.data.url;
     } else {
-      throw new Error(result.error || "Failed to get Google sign-in URL");
+      const errorMessage = Array.isArray(result.error)
+        ? result.error.join(", ")
+        : result.error || "Failed to get Google sign-in URL";
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error("Google sign-in error:", error);

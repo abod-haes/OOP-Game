@@ -67,7 +67,10 @@ export function useLevel(levelId: string) {
             setCurrentCode(response.data.previousCode);
           }
         } else {
-          setLevelError(response.error || "Failed to load level");
+          const errorMessage = Array.isArray(response.error)
+            ? response.error.join(", ")
+            : response.error || "Failed to load level";
+          setLevelError(errorMessage);
         }
       } catch (error) {
         setLevelError("Failed to load level data");
@@ -156,7 +159,12 @@ export function useLevel(levelId: string) {
         if (checkResult.error) {
           // Check if error is an array of strings
           if (Array.isArray(checkResult.error)) {
-            errorMessage += checkResult.error.join("\n");
+            // Format array of errors as a numbered list
+            errorMessage += "\n\n";
+            checkResult.error.forEach((error, index) => {
+              errorMessage += `${index + 1}. ${error}\n`;
+            });
+            errorMessage = errorMessage.trim();
           } else if (typeof checkResult.error === "string") {
             errorMessage += checkResult.error;
           } else {

@@ -43,11 +43,15 @@ function GoogleCallbackContent() {
           console.log("  - Access token length:", accessToken.length);
           console.log("  - Refresh token length:", refreshToken.length);
 
+          // Get userId from URL parameters if available
+          const urlUserId = searchParams.get("userId");
+
           // Store tokens (Google sign-in defaults to remember me for better UX)
           await sessionUtils.setTokens(
             {
               accessToken,
               refreshToken,
+              userId: urlUserId || undefined,
             },
             true
           );

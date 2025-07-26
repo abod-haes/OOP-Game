@@ -63,7 +63,6 @@ function Map() {
         if (response.success && response.data) {
           setUserLevels(response.data);
           setStoreUserLevels(response.data);
-          console.log(response.data, "user levels");
         }
       }
     } catch (error) {
@@ -83,7 +82,6 @@ function Map() {
 
       if (response.success && response.data) {
         setAllLevels(response.data.data);
-        console.log(response.data, "all levels");
       }
     } catch (error) {
       console.error("Error fetching all levels:", error);
@@ -178,7 +176,6 @@ function Map() {
           .filter((level) => level.sectionId === section.id)
           .sort((a, b) => a.levelNumber - b.levelNumber), // Sort levels by level number
       }));
-      console.log(sectionsWithLevels);
       setSections(sectionsWithLevels);
 
       // Update Zustand store with sections data
@@ -187,7 +184,6 @@ function Map() {
         sectionNumber: section.sectionNumber,
         levels: section.levels,
       }));
-      console.log(storeSectionsData, "ss");
       setStoreSections(storeSectionsData);
 
       // Find user's last level
@@ -197,8 +193,6 @@ function Map() {
         sectionsWithLevels
       );
       setUserLastLevel(lastLevel);
-
-      console.log("User's last level:", lastLevel);
     }
   }, [allLevels, userLevels, rawSections, setStoreSections, findUserLastLevel]);
 
@@ -331,12 +325,6 @@ function Map() {
             const isCompleted =
               userLevelsInSection.length >= sectionLevels.length;
 
-            console.log(`Section ${section.sectionNumber} (${sectionId}):`, {
-              totalLevels: sectionLevels.length,
-              completedLevels: userLevelsInSection.length,
-              isCompleted: isCompleted,
-            });
-
             return isCompleted;
           };
 
@@ -350,17 +338,6 @@ function Map() {
               hasCompletedAllLevelsInSection(previousSection.id)) || // Can access if previous section is fully completed
             hasCompletedSection || // Can access if user has any progress in this section
             isUserCurrentSection; // Can access if this is the user's current section
-
-          console.log(`Section ${e.sectionNumber} (${e.id}):`, {
-            index,
-            hasCompletedSection,
-            isUserCurrentSection,
-            previousSectionCompleted: previousSection
-              ? hasCompletedAllLevelsInSection(previousSection.id)
-              : "N/A",
-            canAccessThisSection,
-            isClickable: canAccessThisSection,
-          });
 
           if (hasCompletedSection || isUserCurrentSection) {
             sectionStatus = "completed";
@@ -388,7 +365,6 @@ function Map() {
               onClick={
                 isClickable
                   ? () => {
-                      console.log(e);
                       // If this is the user's current section, navigate to their last level
                       if (isUserCurrentSection && userLastLevel) {
                         handleLevelClick(e.id, userLastLevel.id);

@@ -15,6 +15,15 @@ import {
 } from "@/lib/api/client";
 import { HoverButton } from "@/components/ui/hover-button";
 import FormInput from "@/components/ui/form-input";
+import { BASE_URL } from "@/app/api-services";
+
+interface Section {
+  id: string;
+  updatedAt: string | null;
+  deletedAt: string | null;
+  sectionNumber: number;
+  description: string;
+}
 
 interface ProfileFormData {
   firstName: string;
@@ -31,6 +40,8 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userLastLevel, setUserLastLevel] = useState<UserLevel | null>(null);
+  const [userLevels, setUserLevels] = useState<UserLevel[]>([]);
+  const [sections, setSections] = useState<Section[]>([]);
   const [formData, setFormData] = useState<ProfileFormData>({
     firstName: "",
     lastName: "",
@@ -49,6 +60,7 @@ export default function ProfilePage() {
 
     loadUserProfile();
     loadUserLastLevel();
+    loadSections();
   }, [router]);
 
   const loadUserProfile = async () => {
@@ -83,7 +95,10 @@ export default function ProfilePage() {
           birthDate: birthDateForForm,
         });
       } else {
-        setError(response.error || "Failed to load profile");
+        const errorMessage = Array.isArray(response.error)
+          ? response.error.join(", ")
+          : response.error || "Failed to load profile";
+        setError(errorMessage);
       }
     } catch (error) {
       setError("An error occurred while loading the profile");
@@ -100,6 +115,8 @@ export default function ProfilePage() {
 
       const response = await getUserLastLevels(userId);
       if (response.success && response.data && response.data.length > 0) {
+        setUserLevels(response.data);
+
         // Find the highest level the user has completed
         const highestLevel = response.data.reduce((highest, current) => {
           return current.levelNumber > highest.levelNumber ? current : highest;
@@ -108,6 +125,18 @@ export default function ProfilePage() {
       }
     } catch (error) {
       console.error("Error loading user's last level:", error);
+    }
+  };
+
+  const loadSections = async () => {
+    try {
+      const response = await fetch(BASE_URL + "/section/getAll");
+      if (response.ok) {
+        const data = await response.json();
+        setSections(data.data || []);
+      }
+    } catch (error) {
+      console.error("Error loading sections:", error);
     }
   };
 
@@ -146,7 +175,10 @@ export default function ProfilePage() {
         setIsEditing(false);
         await loadUserProfile(); // Reload the profile data
       } else {
-        setError(response.error || "Failed to update profile");
+        const errorMessage = Array.isArray(response.error)
+          ? response.error.join(", ")
+          : response.error || "Failed to update profile";
+        setError(errorMessage);
       }
     } catch (error) {
       setError("An error occurred while updating the profile");
@@ -293,7 +325,28 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-2 text-metallic-light/80">
                     <lucideReact.Map className="w-4 h-4" />
                     <span className="text-sm">
-                      Section {userLastLevel.sectionId}
+                      {(() => {
+                        const section = sections.find(
+                          (s) => s.id === userLastLevel.sectionId
+                        );
+                        return section
+                          ? `Section ${
+                              section.sectionNumber
+                            }: ${section.description
+                              .split(" ")
+                              .slice(0, 3)
+                              .join(" ")}...`
+                          : `Section ${userLastLevel.sectionId.slice(0, 8)}...`;
+                      })()}
+                    </span>
+                  </div>
+                )}
+                {userLevels.length > 0 && (
+                  <div className="flex items-center gap-2 text-metallic-light/80">
+                    <lucideReact.CheckCircle className="w-4 h-4" />
+                    <span className="text-sm">
+                      {userLevels.length} level
+                      {userLevels.length !== 1 ? "s" : ""} completed
                     </span>
                   </div>
                 )}
@@ -333,6 +386,117 @@ export default function ProfilePage() {
               <lucideReact.AlertCircle className="w-5 h-5 text-red-400" />
               <p className="text-red-400">{error}</p>
             </div>
+          </motion.div>
+        )}
+
+        {/* User Progress Section */}
+        {userLevels.length > 0 && (
+          <motion.div
+            variants={itemVariants}
+            className="bg-metallic-light/5 backdrop-blur-lg border border-white/10 rounded-2xl p-8 mb-8"
+          >
+            <h2 className="text-2xl font-bold text-light-200 mb-6 flex items-center gap-2">
+              <lucideReact.Trophy className="w-6 h-6 text-metallic-accent" />
+              Learning Progress
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Total Levels Completed */}
+              <div className="bg-metallic-accent/10 border border-metallic-accent/20 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-metallic-accent/20 rounded-full flex items-center justify-center">
+                    <lucideReact.CheckCircle className="w-5 h-5 text-metallic-accent" />
+                  </div>
+                  <div>
+                    <p className="text-metallic-light/60 text-sm">
+                      Total Completed
+                    </p>
+                    <p className="text-light-200 text-xl font-bold">
+                      {userLevels.length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Highest Level */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                    <lucideReact.TrendingUp className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-metallic-light/60 text-sm">
+                      Highest Level
+                    </p>
+                    <p className="text-light-200 text-xl font-bold">
+                      {userLastLevel
+                        ? `Level ${userLastLevel.levelNumber}`
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Current Section */}
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <lucideReact.Map className="w-5 h-5 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-metallic-light/60 text-sm">
+                      Current Section
+                    </p>
+                    <p className="text-light-200 text-xl font-bold">
+                      {userLastLevel
+                        ? (() => {
+                            const section = sections.find(
+                              (s) => s.id === userLastLevel.sectionId
+                            );
+                            return section
+                              ? `Section ${section.sectionNumber}`
+                              : "N/A";
+                          })()
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Levels */}
+            {userLevels.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-light-200 mb-4">
+                  Recent Levels
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {userLevels
+                    .sort((a, b) => b.levelNumber - a.levelNumber)
+                    .slice(0, 6)
+                    .map((level) => (
+                      <div
+                        key={level.id}
+                        className="bg-metallic-light/5 border border-white/10 rounded-lg p-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-light-200 font-medium">
+                              Level {level.levelNumber}
+                            </p>
+                            <p className="text-metallic-light/60 text-sm">
+                              {level.name}
+                            </p>
+                          </div>
+                          <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                            <lucideReact.Check className="w-4 h-4 text-green-400" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 

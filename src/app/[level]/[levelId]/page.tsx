@@ -40,6 +40,7 @@ export default function LabGamePage() {
     findNextLevel,
     isLastLevel,
     getSectionByLevelId,
+    getUserCurrentLevel,
     sections,
   } = useGameStore();
 
@@ -100,10 +101,23 @@ export default function LabGamePage() {
             console.log("Current section found:", currentSection);
 
             // Check if user can access this level
-            if (levelData && highestLevel.levelNumber < levelData.levelNumber) {
-              console.log("User cannot access this level. Redirecting to map.");
-              router.push("/");
-              return;
+            console.log(levelData, "tEst", highestLevel.levelNumber);
+
+            // Get the user's current level (next level they should access)
+            const userCurrentLevel = getUserCurrentLevel();
+
+            if (levelData && userCurrentLevel) {
+              // User can access their current level and any level up to that point
+              if (levelData.levelNumber > userCurrentLevel.levelNumber) {
+                console.log(
+                  "User cannot access this level. Redirecting to map."
+                );
+                console.log(
+                  `User's current level: ${userCurrentLevel.levelNumber}, trying to access: ${levelData.levelNumber}`
+                );
+                router.push("/");
+                return;
+              }
             }
 
             console.log("User's last level:", highestLevel);

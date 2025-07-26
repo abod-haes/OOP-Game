@@ -4,8 +4,11 @@
  */
 
 // Google OAuth configuration
-export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+export const GOOGLE_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+  "59527742030-8cvnm71q7blgfs7mbpn392f502m1u9im.apps.googleusercontent.com";
+export const GOOGLE_CLIENT_SECRET =
+  process.env.GOOGLE_CLIENT_SECRET || "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";
 
 // Validate required environment variables
 if (!GOOGLE_CLIENT_ID) {
@@ -228,6 +231,7 @@ export async function registerGoogleUser(googleUserData: {
 }): Promise<{
   accessToken: string;
   refreshToken: string;
+  userId?: string;
 }> {
   console.log("Registering Google user with external API...");
   console.log("User data:", {
@@ -292,6 +296,7 @@ export async function registerGoogleUser(googleUserData: {
 
     const responseData = await response.json();
     console.log("External API successful response:", Object.keys(responseData));
+    console.log("External API response data:", responseData);
 
     return responseData;
   } catch (error) {
@@ -411,7 +416,7 @@ export async function completeLocalGoogleOAuthFlow(code: string): Promise<{
       return {
         accessToken: authTokens.accessToken,
         refreshToken: authTokens.refreshToken,
-        userId: userInfo.id, // Include user ID from Google
+        userId: authTokens.userId || userInfo.id, // Use userId from API response, fallback to Google ID
         userInfo,
       };
     } catch (registerError) {

@@ -25,6 +25,7 @@ interface GameStore {
   getSectionByLevelId: (levelId: string) => SectionWithLevels | null;
   getCurrentSection: () => SectionWithLevels | null;
   getNextSection: () => SectionWithLevels | null;
+  getUserCurrentLevel: () => Level | null;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -208,5 +209,52 @@ export const useGameStore = create<GameStore>((set, get) => ({
         (s) => s.sectionNumber === currentSection.sectionNumber + 1
       ) || null
     );
+  },
+
+  // Get the user's current level (next level they should access)
+  getUserCurrentLevel: () => {
+    const { userLevels, sections } = get();
+
+    if (userLevels.length === 0) return null;
+
+    // Find the highest level number among user's completed levels
+    const highestUserLevel = userLevels.reduce((highest, current) => {
+      return current.levelNumber > highest.levelNumber ? current : highest;
+    });
+
+    // Find the next level after the highest completed level
+    const nextLevel = sections
+      .flatMap((section) => section.levels)
+      .find(
+        (level) =>
+          level.sectionId === highestUserLevel.sectionId &&
+          level.levelNumber === highestUserLevel.levelNumber + 1
+      );
+
+    // If there's a next level in the same section, return it
+    if (nextLevel) return nextLevel;
+
+    // If no next level in same section, find the first level of the next section
+    const currentSection = sections.find(
+      (s) => s.sectionId === highestUserLevel.sectionId
+    );
+    if (currentSection) {
+      const nextSection = sections.find(
+        (s) => s.sectionNumber === currentSection.sectionNumber + 1
+      );
+      if (nextSection) {
+        const firstLevelOfNextSection = nextSection.levels.find(
+          (level) => level.levelNumber === 1
+        );
+        if (firstLevelOfNextSection) return firstLevelOfNextSection;
+      }
+    }
+
+    // If no next level found, return the highest completed level
+    const lastCompletedLevel = sections
+      .flatMap((section) => section.levels)
+      .find((level) => level.id === highestUserLevel.id);
+
+    return lastCompletedLevel || null;
   },
 }));
