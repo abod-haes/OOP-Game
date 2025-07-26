@@ -36,7 +36,7 @@ export function LevelBackground({
       {/* Background Flashing Layer */}
       {!success && (
         <motion.div
-          className="absolute top-0 left-0 w-full h-full z-10 bg-red-600 opacity-0 pointer-events-none"
+          className="absolute top-0 left-0 w-full  h-full z-10 bg-red-600 opacity-0 pointer-events-none"
           animate={{ opacity: [0.06, 0.15, 0.06] }}
           transition={{ repeat: Infinity, duration: 1 }}
         />
