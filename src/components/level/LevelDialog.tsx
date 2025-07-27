@@ -1,4 +1,4 @@
-import { Play } from "lucide-react";
+import { Play, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +44,16 @@ export function LevelDialog({
         }}
       >
         <DialogHeader>
-          {/* Dialog title can be added here if needed */}
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-semibold"></h2>
+            <button
+              onClick={() => onDialogOpenChange(false)}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Close dialog"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </DialogHeader>
 
         {/* Java Editor */}

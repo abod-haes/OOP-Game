@@ -128,6 +128,10 @@ export function useLevel(levelId: string) {
       // Call checkCode API when syntax is valid
       const checkResult = await checkCode(userId, levelId, currentCode);
 
+      console.log("Check result:", checkResult);
+      console.log("Check result success:", checkResult.success);
+      console.log("Check result error:", checkResult.error);
+
       if (checkResult.success) {
         setSuccess(true);
         setIsDialogOpen(false);
@@ -157,16 +161,33 @@ export function useLevel(levelId: string) {
         let errorMessage = "❌ Code check failed: ";
 
         if (checkResult.error) {
-          // Check if error is an array of strings
-          if (Array.isArray(checkResult.error)) {
+          // Handle nested error structure
+          let actualErrors: string[] = [];
+
+          if (
+            typeof checkResult.error === "object" &&
+            checkResult.error !== null
+          ) {
+            // Check if error has a nested error property (like {success: false, error: [...]})
+            if (
+              "error" in checkResult.error &&
+              Array.isArray(checkResult.error.error)
+            ) {
+              actualErrors = checkResult.error.error;
+            } else if (Array.isArray(checkResult.error)) {
+              actualErrors = checkResult.error;
+            }
+          } else if (typeof checkResult.error === "string") {
+            actualErrors = [checkResult.error];
+          }
+
+          if (actualErrors.length > 0) {
             // Format array of errors as a numbered list
             errorMessage += "\n\n";
-            checkResult.error.forEach((error, index) => {
+            actualErrors.forEach((error, index) => {
               errorMessage += `${index + 1}. ${error}\n`;
             });
             errorMessage = errorMessage.trim();
-          } else if (typeof checkResult.error === "string") {
-            errorMessage += checkResult.error;
           } else {
             errorMessage += "Unknown error occurred";
           }

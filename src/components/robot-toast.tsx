@@ -77,11 +77,11 @@ export function RobotToast({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ opacity: 0, y: -50, scale: 0.9 }}
+          initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -50, scale: 0.9 }}
+          exit={{ opacity: 0, y: 50, scale: 0.9 }}
           transition={{ type: "spring", damping: 20, stiffness: 300 }}
-          className="fixed top-4 right-4 transform  z-[80] max-w-md"
+          className="fixed bottom-4 right-4 transform  z-[80] max-w-md"
         >
           <div className="bg-metallic-dark/95 backdrop-blur-sm border border-metallic-accent/30 rounded-lg shadow-lg p-4">
             <div className="flex items-start gap-3">

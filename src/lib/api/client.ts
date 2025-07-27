@@ -466,10 +466,24 @@ export async function handleApiResponse<T>(
 ): Promise<ApiResponse<T>> {
   try {
     if (!response.ok) {
-      const errorText = await response.text();
+      // Try to parse as JSON first, fallback to text
+      let errorData: string | string[];
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        try {
+          errorData = await response.json();
+        } catch {
+          // If JSON parsing fails, fallback to text
+          errorData = await response.text();
+        }
+      } else {
+        errorData = await response.text();
+      }
+
       return {
         success: false,
-        error: `HTTP error! status: ${response.status}, message: ${errorText}`,
+        error: errorData,
       };
     }
 

@@ -38,9 +38,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            errorData.error ||
-            `HTTP ${response.status}: ${response.statusText}`,
+          error: errorData, // Return the error data directly (could be array or object)
         },
         { status: response.status }
       );
