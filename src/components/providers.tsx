@@ -1,9 +1,9 @@
 "use client";
-import React from "react";
+
 import { FC, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Toaster } from "react-hot-toast";
 import { MouseAnimation } from "./MouseAnimation";
-import { usePathname } from "next/navigation";
 import GridBackground from "./ui/grid-background";
 import { HeroGeometric } from "./ui/shape-landing-hero";
 import {
@@ -16,7 +16,6 @@ interface ProvidersProps {
   children: ReactNode;
 }
 
-// Component to render the global robot toast
 function GlobalRobotToast() {
   const { toastState, hideToast } = useGlobalRobotToast();
 
@@ -34,7 +33,7 @@ function GlobalRobotToast() {
 
 const Providers: FC<ProvidersProps> = ({ children }) => {
   const pathname = usePathname();
-  const isLevelPage = pathname.includes("/level");
+  const isLevelPage = /^\/section-[^/]+\/[^/]+\/?$/.test(pathname);
 
   return (
     <RobotToastProvider>
@@ -42,12 +41,8 @@ const Providers: FC<ProvidersProps> = ({ children }) => {
 
       <div className="relative">
         <Toaster position="top-center" reverseOrder={false} />
-
-        {/* Global Robot Toast */}
         <GlobalRobotToast />
-
         {children}
-        {/* Show MouseAnimation on all pages for consistent cursor experience */}
         <MouseAnimation />
       </div>
     </RobotToastProvider>

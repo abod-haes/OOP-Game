@@ -1,459 +1,326 @@
 "use client";
+
 import Image from "next/image";
-import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Check, LockKeyhole, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Loader from "../ui/loader";
 import {
-  sessionUtils,
-  getUserLastLevels,
-  UserLevel,
   getAllLevels,
+  getAllSections,
+  getUserLastLevels,
   Level,
+  Section,
+  sessionUtils,
+  UserLevel,
 } from "@/lib/api/client";
-import { BASE_URL } from "@/app/api-services";
 import { useGameStore } from "@/lib/store";
-
-interface Section {
-  id: string;
-  updatedAt: string | null;
-  deletedAt: string | null;
-  sectionNumber: number;
-  description: string;
-}
 
 interface SectionWithLevels extends Section {
   levels: Level[];
 }
 
-interface ApiResponse {
-  data: Section[];
-  totalCount: number;
-  pageSize: number;
-  pageNumber: number;
-  totalPages: number;
-  nextPage: number | null;
-  previousPage: number | null;
-}
-
 function Map() {
   const router = useRouter();
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [rawSections, setRawSections] = useState<Section[]>([]);
   const [sections, setSections] = useState<SectionWithLevels[]>([]);
-  const [isLoadingSections, setIsLoadingSections] = useState(true);
   const [userLevels, setUserLevels] = useState<UserLevel[]>([]);
-  const [isLoadingUserLevels, setIsLoadingUserLevels] = useState(false);
-  const [allLevels, setAllLevels] = useState<Level[]>([]);
-  const [isLoadingAllLevels, setIsLoadingAllLevels] = useState(false);
   const [userLastLevel, setUserLastLevel] = useState<Level | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Zustand store
   const { setSections: setStoreSections, setUserLevels: setStoreUserLevels } =
     useGameStore();
 
-  const fetchUserLevels = useCallback(async () => {
-    try {
-      setIsLoadingUserLevels(true);
-      const userId = sessionUtils.getUserId();
-
-      if (userId && sessionUtils.isAuthenticated()) {
-        const response = await getUserLastLevels(userId);
-        if (response.success && response.data) {
-          setUserLevels(response.data);
-          setStoreUserLevels(response.data);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching user levels:", error);
-    } finally {
-      setIsLoadingUserLevels(false);
-    }
-  }, [setStoreUserLevels]);
-
-  const fetchAllLevels = useCallback(async () => {
-    try {
-      setIsLoadingAllLevels(true);
-      const response = await getAllLevels({
-        PageSize: 50, // Get more levels
-        Asc: true, // Ascending order
-      });
-
-      if (response.success && response.data) {
-        setAllLevels(response.data.data);
-      }
-    } catch (error) {
-      console.error("Error fetching all levels:", error);
-    } finally {
-      setIsLoadingAllLevels(false);
-    }
-  }, []);
-
-  // Find user's last level
-  const findUserLastLevel = useCallback(
+  const findUserNextLevel = useCallback(
     (
-      userLevels: UserLevel[],
+      completedLevels: UserLevel[],
       allLevels: Level[],
       sectionsData: SectionWithLevels[]
     ): Level | null => {
-      if (userLevels.length === 0) return null;
-
-      // Find the highest level number among user's completed levels
-      const highestUserLevel = userLevels.reduce((highest, current) => {
-        return current.levelNumber > highest.levelNumber ? current : highest;
-      });
-
-      // Find the next level after the highest completed level
-      const nextLevel = allLevels.find(
-        (level) =>
-          level.sectionId === highestUserLevel.sectionId &&
-          level.levelNumber === highestUserLevel.levelNumber + 1
-      );
-
-      // If there's a next level in the same section, return it
-      if (nextLevel) return nextLevel;
-
-      // If no next level in same section, find the first level of the next section
-      const currentSection = sectionsData.find(
-        (s) => s.id === highestUserLevel.sectionId
-      );
-      if (currentSection) {
-        const nextSection = sectionsData.find(
-          (s) => s.sectionNumber === currentSection.sectionNumber + 1
-        );
-        if (nextSection) {
-          const firstLevelOfNextSection = allLevels.find(
-            (level) =>
-              level.sectionId === nextSection.id && level.levelNumber === 1
-          );
-          if (firstLevelOfNextSection) return firstLevelOfNextSection;
-        }
+      if (completedLevels.length === 0) {
+        return sectionsData[0]?.levels[0] ?? null;
       }
 
-      // If no next level found, return the highest completed level
-      const lastCompletedLevel = allLevels.find(
-        (level) => level.id === highestUserLevel.id
+      const orderedCompleted = [...completedLevels].sort((a, b) => {
+        const sectionA =
+          sectionsData.find((section) => section.id === a.sectionId)
+            ?.sectionNumber ?? 0;
+        const sectionB =
+          sectionsData.find((section) => section.id === b.sectionId)
+            ?.sectionNumber ?? 0;
+        return sectionB - sectionA || b.levelNumber - a.levelNumber;
+      });
+
+      const highestCompleted = orderedCompleted[0];
+      const nextInSection = allLevels.find(
+        (level) =>
+          level.sectionId === highestCompleted.sectionId &&
+          level.levelNumber === highestCompleted.levelNumber + 1
       );
-      return lastCompletedLevel || null;
+
+      if (nextInSection) return nextInSection;
+
+      const currentSection = sectionsData.find(
+        (section) => section.id === highestCompleted.sectionId
+      );
+      const nextSection = sectionsData.find(
+        (section) =>
+          section.sectionNumber === (currentSection?.sectionNumber ?? 0) + 1
+      );
+
+      return (
+        nextSection?.levels[0] ??
+        allLevels.find((level) => level.id === highestCompleted.id) ??
+        null
+      );
     },
     []
   );
 
-  useEffect(() => {
-    const fetchSections = async () => {
-      try {
-        const response = await fetch(BASE_URL + "/section/getAll");
-        if (response.ok) {
-          const data: ApiResponse = await response.json();
-          // Sort sections by section number from small to large
-          const sortedSections = data.data.sort(
-            (a, b) => a.sectionNumber - b.sectionNumber
-          );
-          setRawSections(sortedSections);
-        } else {
-          console.error("Failed to fetch sections");
-        }
-      } catch (error) {
-        console.error("Error fetching sections:", error);
-      } finally {
-        setIsLoadingSections(false);
+  const loadMapData = useCallback(async () => {
+    setIsInitialLoading(true);
+    setLoadError(null);
+
+    try {
+      const userId = sessionUtils.getUserId();
+      const userProgressPromise =
+        userId && sessionUtils.isAuthenticated()
+          ? getUserLastLevels(userId)
+          : Promise.resolve({ success: true, data: [] as UserLevel[] });
+
+      const [sectionsResponse, levelsResponse, progressResponse] =
+        await Promise.all([
+          getAllSections(),
+          getAllLevels({ PageSize: 100, Asc: true }),
+          userProgressPromise,
+        ]);
+
+      if (!sectionsResponse.success || !sectionsResponse.data) {
+        throw new Error("Local sections could not be loaded.");
       }
-    };
 
-    fetchSections();
-    fetchUserLevels();
-    fetchAllLevels();
-  }, [fetchUserLevels, fetchAllLevels]);
+      if (!levelsResponse.success || !levelsResponse.data) {
+        throw new Error("Local levels could not be loaded.");
+      }
 
-  // Update sections with their levels and find user's last level
-  useEffect(() => {
-    if (allLevels.length > 0 && rawSections.length > 0) {
-      // Add levels to each section
-      const sectionsWithLevels = rawSections.map((section) => ({
-        ...section,
-        levels: allLevels
-          .filter((level) => level.sectionId === section.id)
-          .sort((a, b) => a.levelNumber - b.levelNumber), // Sort levels by level number
-      }));
+      const allLevels = levelsResponse.data.data;
+      const completedLevels = progressResponse.data ?? [];
+      const sectionsWithLevels = [...sectionsResponse.data]
+        .sort((a, b) => a.sectionNumber - b.sectionNumber)
+        .map((section) => ({
+          ...section,
+          levels: allLevels
+            .filter((level) => level.sectionId === section.id)
+            .sort((a, b) => a.levelNumber - b.levelNumber),
+        }));
+
       setSections(sectionsWithLevels);
-
-      // Update Zustand store with sections data
-      const storeSectionsData = sectionsWithLevels.map((section) => ({
-        sectionId: section.id,
-        sectionNumber: section.sectionNumber,
-        levels: section.levels,
-      }));
-      setStoreSections(storeSectionsData);
-
-      // Find user's last level
-      const lastLevel = findUserLastLevel(
-        userLevels,
-        allLevels,
-        sectionsWithLevels
+      setUserLevels(completedLevels);
+      setStoreUserLevels(completedLevels);
+      setStoreSections(
+        sectionsWithLevels.map((section) => ({
+          sectionId: section.id,
+          sectionNumber: section.sectionNumber,
+          levels: section.levels,
+        }))
       );
-      setUserLastLevel(lastLevel);
+      setUserLastLevel(
+        findUserNextLevel(completedLevels, allLevels, sectionsWithLevels)
+      );
+    } catch (error) {
+      console.error("Unable to initialize the adventure map:", error);
+      setLoadError(
+        error instanceof Error ? error.message : "Unable to load the map."
+      );
+    } finally {
+      setIsInitialLoading(false);
     }
-  }, [allLevels, userLevels, rawSections, setStoreSections, findUserLastLevel]);
+  }, [findUserNextLevel, setStoreSections, setStoreUserLevels]);
 
-  const handleLevelClick = (sectionId: string, targetLevelId?: string) => {
-    // Check if user is authenticated
+  useEffect(() => {
+    void loadMapData();
+  }, [loadMapData]);
+
+  const hasCompletedAllLevelsInSection = (sectionId: string) => {
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section || section.levels.length === 0) return false;
+
+    return (
+      userLevels.filter((level) => level.sectionId === sectionId).length >=
+      section.levels.length
+    );
+  };
+
+  const handleSectionClick = (sectionId: string, targetLevelId?: string) => {
     if (!sessionUtils.isAuthenticated()) {
-      // If not authenticated, redirect to login page
       router.push("/sign-in");
       return;
     }
 
-    // If authenticated, proceed with level selection
-    setSelectedLevel(parseInt(sectionId));
-    setIsLoading(true);
+    const section = sections.find((item) => item.id === sectionId);
+    if (!section || section.levels.length === 0) return;
 
-    // Determine which level to navigate to
     let levelToNavigate = targetLevelId;
+    const completedInSection = userLevels
+      .filter((level) => level.sectionId === sectionId)
+      .sort((a, b) => b.levelNumber - a.levelNumber);
 
     if (!levelToNavigate) {
-      // If no specific level provided, find the appropriate level for this section
-      const section = sections.find((s) => s.id === sectionId);
-      if (section) {
-        // Check if user has completed this section
-        const hasCompletedSection = userLevels.some(
-          (level) => level.sectionId === sectionId
-        );
-
-        if (hasCompletedSection) {
-          // Find the next level in this section
-          const lastUserLevelInSection = userLevels
-            .filter((level) => level.sectionId === sectionId)
-            .reduce((highest, current) =>
-              current.levelNumber > highest.levelNumber ? current : highest
-            );
-
-          const nextLevel = section.levels.find(
-            (level) =>
-              level.levelNumber === lastUserLevelInSection.levelNumber + 1
-          );
-
-          levelToNavigate = nextLevel?.id || section.levels[0]?.id;
-        } else {
-          // Start from the first level of this section
-          levelToNavigate = section.levels[0]?.id;
-        }
-      }
+      const nextNumber = (completedInSection[0]?.levelNumber ?? 0) + 1;
+      levelToNavigate =
+        section.levels.find((level) => level.levelNumber === nextNumber)?.id ??
+        section.levels[0].id;
     }
 
-    // Fallback to section ID if no level found
-    if (!levelToNavigate) {
-      levelToNavigate = sectionId;
-    }
-
-    setTimeout(() => {
-      router.push(`/${sectionId}/${levelToNavigate}`);
-    }, 1500);
+    setSelectedSectionId(sectionId);
+    router.push(`/${sectionId}/${levelToNavigate}`);
   };
 
-  // Generate map levels from sections data
-  const mapLevels = sections.map((section) => ({
-    id: section.id, // Use UUID for URL navigation
-    sectionNumber: section.sectionNumber, // Keep sectionNumber for display
-    image: `/assets/images/map-${section.sectionNumber}.png`,
-    description: section.description,
-    levels: section.levels,
-  }));
-
-  if (isLoadingSections || isLoadingUserLevels || isLoadingAllLevels) {
+  if (isInitialLoading) {
     return (
-      <div className="relative w-full h-full md:min-h-[60vh] min-h-[40vh] flex items-center justify-center">
+      <div className="relative flex min-h-[40vh] w-full items-center justify-center md:min-h-[60vh]">
         <Loader />
       </div>
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="mx-auto flex min-h-[320px] max-w-xl flex-col items-center justify-center gap-4 text-center text-white">
+        <LockKeyhole className="h-10 w-10 text-metallic-accent" />
+        <p className="text-lg font-medium">The adventure map could not open.</p>
+        <p className="text-sm text-white/60">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => void loadMapData()}
+          className="rounded-lg bg-metallic-accent px-5 py-2.5 font-medium text-white transition hover:bg-metallic-accent/80"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full h-full md:min-h-[60vh] min-h-[40vh]">
-      <AnimatePresence>{isLoading && <Loader />}</AnimatePresence>
+    <div className="relative min-h-[40vh] w-full md:min-h-[60vh]">
       <motion.div
-        className="relative w-full max-w-[1250px] mx-auto h-full flex justify-center"
+        className="relative mx-auto flex h-full w-full max-w-[1250px] justify-center"
         animate={
-          selectedLevel
-            ? {
-                scale: [1, 2, 2.2],
-                transition: {
-                  duration: 1,
-                  times: [0, 0.8, 1],
-                  ease: "linear",
-                },
-              }
-            : {}
+          selectedSectionId
+            ? { scale: 1.04, opacity: 0.85 }
+            : { scale: 1, opacity: 1 }
         }
+        transition={{ duration: 0.2, ease: "easeOut" }}
       >
         <Image
           src="/assets/images/map-main.png"
-          alt="Map background"
+          alt="RoboRescue adventure map"
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1250px"
-          className="z-10 w-full mx-auto"
+          className="z-10 mx-auto w-full object-contain"
+          priority
         />
-        {mapLevels.map((e, index) => {
-          // Check if user has completed this section
-          const hasCompletedSection = userLevels.some(
-            (level) => level.sectionId === e.id
+
+        {sections.map((section, index) => {
+          const hasProgress = userLevels.some(
+            (level) => level.sectionId === section.id
           );
-
-          // Get levels for this section
-          const sectionLevels = e.levels;
-
-          // Determine section status and styling
-          let sectionStatus = "locked"; // default: gray/locked
-          let overlayClass = "bg-gray-600/50"; // default gray overlay
-          let isClickable = false;
-
-          // Check if this is the user's current section (where their last level is)
-          const isUserCurrentSection =
-            userLastLevel && userLastLevel.sectionId === e.id;
-
-          // Check if user has completed ALL levels in a section
-          const hasCompletedAllLevelsInSection = (sectionId: string) => {
-            const section = sections.find((s) => s.id === sectionId);
-            if (!section) return false;
-
-            const sectionLevels = section.levels;
-            const userLevelsInSection = userLevels.filter(
-              (level) => level.sectionId === sectionId
-            );
-
-            // User has completed all levels if they have completed as many levels as the section has
-            const isCompleted =
-              userLevelsInSection.length >= sectionLevels.length;
-
-            return isCompleted;
-          };
-
-          // Check if user has completed ALL levels in the previous section
+          const isCurrentSection = userLastLevel?.sectionId === section.id;
           const previousSection = sections.find(
-            (s) => s.sectionNumber === e.sectionNumber - 1
+            (item) => item.sectionNumber === section.sectionNumber - 1
           );
-          const canAccessThisSection =
-            index === 0 || // First section is always available
-            (previousSection &&
-              hasCompletedAllLevelsInSection(previousSection.id)) || // Can access if previous section is fully completed
-            hasCompletedSection || // Can access if user has any progress in this section
-            isUserCurrentSection; // Can access if this is the user's current section
+          const canAccess =
+            index === 0 ||
+            Boolean(
+              previousSection &&
+                hasCompletedAllLevelsInSection(previousSection.id)
+            ) ||
+            hasProgress ||
+            isCurrentSection;
 
-          if (hasCompletedSection || isUserCurrentSection) {
-            sectionStatus = "completed";
-            overlayClass = "bg-green-500/30"; // green overlay for completed
-            isClickable = true;
-          } else if (canAccessThisSection) {
-            sectionStatus = "current";
-            overlayClass = "bg-blue-500/30"; // blue overlay for current
-            isClickable = true;
-          }
+          const status =
+            hasCompletedAllLevelsInSection(section.id) && hasProgress
+              ? "completed"
+              : canAccess
+              ? "current"
+              : "locked";
 
-          // If this is the user's current section, highlight it differently
-          if (isUserCurrentSection) {
-            sectionStatus = "current";
-            overlayClass = "bg-yellow-500/30"; // yellow overlay for current user level
-          }
+          const overlayClass =
+            status === "completed"
+              ? "bg-green-500/20"
+              : status === "current"
+              ? "bg-blue-500/20"
+              : "bg-gray-700/55";
+
+          const StatusIcon =
+            status === "completed"
+              ? Check
+              : status === "current"
+              ? Play
+              : LockKeyhole;
 
           return (
-            <div
-              key={e.id}
+            <button
+              type="button"
+              key={section.id}
+              aria-label={`${section.description}. ${status}`}
+              disabled={!canAccess || selectedSectionId !== null}
               style={{ left: `${(index + (index > 1 ? 1 : 0.3)) * 20}%` }}
-              className={`group absolute top-[-8%] left-0 w-[14%] h-[70%] ${
-                isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-50"
+              className={`group absolute left-0 top-[-8%] h-[70%] w-[14%] text-left transition-opacity disabled:cursor-not-allowed ${
+                canAccess ? "cursor-pointer" : "opacity-50"
               }`}
-              onClick={
-                isClickable
-                  ? () => {
-                      // If this is the user's current section, navigate to their last level
-                      if (isUserCurrentSection && userLastLevel) {
-                        handleLevelClick(e.id, userLastLevel.id);
-                      } else {
-                        handleLevelClick(e.id);
-                      }
-                    }
-                  : undefined
+              onClick={() =>
+                handleSectionClick(
+                  section.id,
+                  isCurrentSection ? userLastLevel?.id : undefined
+                )
               }
             >
               <Image
-                src={e.image}
-                alt="Map background"
+                src={`/assets/images/map-${section.sectionNumber}.png`}
+                alt=""
                 fill
-                sizes="(max-width: 768px) 14vw, 14vw"
-                className="!w-full mx-auto group-hover:-translate-y-8 transition-all duration-300"
+                sizes="14vw"
+                className="mx-auto !w-full object-contain transition-transform duration-300 group-enabled:group-hover:-translate-y-6"
               />
 
-              {/* Status overlay */}
-              <div
-                className={`absolute top-0 w-full h-[100%] z-20 ${overlayClass} transition-all`}
+              <span
+                className={`absolute top-0 z-20 h-full w-full ${overlayClass} transition-colors`}
               />
 
-              {/* Status indicator */}
-              <div
-                className={`absolute -top-2 -right-2 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center z-30 ${
-                  sectionStatus === "completed"
+              <span
+                className={`absolute -right-2 -top-2 z-30 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white ${
+                  status === "completed"
                     ? "bg-green-500"
-                    : sectionStatus === "current"
+                    : status === "current"
                     ? "bg-blue-500"
-                    : "bg-gray-500"
+                    : "bg-gray-600"
                 }`}
               >
-                <span className="text-white text-xs font-bold">
-                  {sectionStatus === "completed"
-                    ? "✓"
-                    : sectionStatus === "current"
-                    ? "▶"
-                    : "🔒"}
+                <StatusIcon className="h-3.5 w-3.5 text-white" />
+              </span>
+
+              {section.levels.length > 0 && (
+                <span className="absolute -bottom-2 -left-2 z-30 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-blue-500 text-xs font-bold text-white">
+                  {section.levels.length}
                 </span>
-              </div>
-
-              {/* Level count indicator */}
-              {sectionLevels.length > 0 && (
-                <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center z-30">
-                  <span className="text-white text-xs font-bold">
-                    {sectionLevels.length}
-                  </span>
-                </div>
               )}
 
-              {/* Current user level indicator */}
-              {isUserCurrentSection && userLastLevel && (
-                <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-yellow-500 rounded-full border-2 border-white flex items-center justify-center z-30">
-                  <span className="text-white text-xs font-bold">
-                    {userLastLevel.levelNumber}
-                  </span>
-                </div>
+              {isCurrentSection && userLastLevel && (
+                <span className="absolute -bottom-2 -right-2 z-30 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-yellow-500 text-xs font-bold text-white">
+                  {userLastLevel.levelNumber}
+                </span>
               )}
 
-              {/* Section name tooltip */}
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-40 whitespace-nowrap">
-                {e.description.split(" ").slice(0, 3).join(" ")}...
-              </div>
-            </div>
+              <span className="absolute -bottom-9 left-1/2 z-40 -translate-x-1/2 whitespace-nowrap rounded bg-black/80 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {section.description}
+              </span>
+            </button>
           );
         })}
       </motion.div>
-      <motion.div
-        className="fixed inset-0 pointer-events-none z-50"
-        initial={{ opacity: 0 }}
-        animate={
-          selectedLevel
-            ? {
-                opacity: [0, 0.5, 0.8],
-                background: [
-                  "radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%)",
-                  "radial-gradient(circle at center, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 100%)",
-                  "radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 100%)",
-                ],
-                transition: {
-                  duration: 1,
-                  times: [0, 0.8, 1],
-                  ease: "linear",
-                },
-              }
-            : { opacity: 0 }
-        }
-      />
     </div>
   );
 }

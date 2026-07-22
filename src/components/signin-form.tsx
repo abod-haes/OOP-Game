@@ -1,144 +1,107 @@
 "use client";
-import React, { useState } from "react";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import * as lucideReact from "lucide-react";
-import { HoverButton } from "./ui/hover-button";
 import { motion } from "framer-motion";
-import FormInput from "./ui/form-input";
 import {
-  signIn,
-  SignInRequest,
-  signInWithGoogle,
-  sessionUtils,
-} from "@/lib/api/client";
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LockKeyhole,
+  LogIn,
+  Mail,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
+import FormInput from "./ui/form-input";
+import { signIn, SignInRequest, signInWithGoogle } from "@/lib/api/client";
 
 interface LoginFormProps {
   onSubmit: (success: boolean, message?: string) => void;
 }
 
-interface ToggleSwitchProps {
-  checked: boolean;
-  onChange: () => void;
-  id: string;
-}
+const DEMO_EMAIL = "player@roborescue.local";
+const DEMO_PASSWORD = "12345678";
 
-// ToggleSwitch Component
-const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
-  checked,
-  onChange,
-  id,
-}) => {
-  return (
-    <div className="relative inline-block w-10 h-5 cursor-pointer">
-      <input
-        type="checkbox"
-        id={id}
-        className="sr-only"
-        checked={checked}
-        onChange={onChange}
-      />
-      <div
-        className={`absolute inset-0 rounded-full transition-colors duration-200 ease-in-out ${
-          checked ? "bg-metallic-accent" : "bg-white/20"
-        }`}
-      >
-        <div
-          className={`absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-200 ease-in-out ${
-            checked ? "transform translate-x-5" : ""
-          }`}
-        />
-      </div>
-    </div>
-  );
-};
-
-// Main LoginForm Component
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
+const LoginForm = ({ onSubmit }: LoginFormProps) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(() => {
-    // Check if user previously enabled remember me
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("rememberMe") === "true";
-    }
-    return false;
-  });
+  const [remember, setRemember] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [isGuestSubmitting, setIsGuestSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  useEffect(() => {
+    router.prefetch("/");
+    setRemember(localStorage.getItem("rememberMe") === "true");
+  }, [router]);
 
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password!");
-      return;
+  const completeLogin = async (
+    credentials: SignInRequest,
+    persistSession: boolean
+  ) => {
+    const result = await signIn(credentials, persistSession);
+
+    if (!result.success) {
+      const errorMessage = Array.isArray(result.error)
+        ? result.error.join(", ")
+        : result.error || "Unable to sign in.";
+      throw new Error(errorMessage);
     }
 
-    console.log("👤 User attempting to sign in:", email.trim());
-    console.log("🔐 Remember me:", remember);
+    onSubmit(true, "Successfully signed in!");
+    router.replace("/");
+    router.refresh();
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (isSubmitting || isGuestSubmitting) return;
+
+    setError(null);
     setIsSubmitting(true);
 
     try {
-      const credentials: SignInRequest = {
-        email: email.trim(),
-        password,
-        fcm: "", // You can make this dynamic if needed
-      };
-
-      const result = await signIn(credentials, remember);
-
-      if (result.success) {
-        setIsSuccess(true);
-
-        // Get the user ID after successful sign-in
-        const userId = sessionUtils.getUserId();
-        console.log("👤 Sign-in form: Final User ID:", userId);
-        console.log(
-          "🔐 Remember me enabled:",
-          sessionUtils.isRememberMeEnabled()
-        );
-
-        onSubmit(true, "Successfully signed in!");
-        router.push("/");
-      } else {
-        const errorMessage = Array.isArray(result.error)
-          ? result.error.join(", ")
-          : result.error || "Failed to sign in";
-        console.log("❌ Sign-in form: Authentication failed:", errorMessage);
-        setError(errorMessage);
-        onSubmit(false, errorMessage);
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "An unexpected error occurred";
-      console.log("❌ Sign-in form: Exception occurred:", errorMessage);
-      setError(errorMessage);
-      onSubmit(false, errorMessage);
-    } finally {
+      await completeLogin(
+        {
+          email: email.trim() || DEMO_EMAIL,
+          password: password || DEMO_PASSWORD,
+          fcm: null,
+        },
+        remember
+      );
+    } catch (loginError) {
+      const message =
+        loginError instanceof Error
+          ? loginError.message
+          : "An unexpected error occurred.";
+      setError(message);
+      onSubmit(false, message);
       setIsSubmitting(false);
-      setIsSuccess(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGuestLogin = async () => {
+    if (isSubmitting || isGuestSubmitting) return;
+
     setError(null);
-    setIsGoogleLoading(true);
+    setIsGuestSubmitting(true);
 
     try {
       await signInWithGoogle();
-      // User will be redirected to Google, so no need to handle success here
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to sign in with Google";
-      setError(errorMessage);
-      setIsGoogleLoading(false);
+    } catch (loginError) {
+      const message =
+        loginError instanceof Error
+          ? loginError.message
+          : "Unable to start a local session.";
+      setError(message);
+      onSubmit(false, message);
+      setIsGuestSubmitting(false);
     }
   };
 
@@ -146,215 +109,153 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
+      transition: { staggerChildren: 0.08, delayChildren: 0.1 },
     },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 16 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.35, ease: "easeOut" },
     },
   };
+
+  const isBusy = isSubmitting || isGuestSubmitting;
 
   return (
     <motion.div
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="p-8 rounded-2xl  bg-metallic-light/5 backdrop-blur-lg  border border-white/10"
+      className="rounded-2xl border border-white/10 bg-metallic-light/5 p-6 backdrop-blur-lg sm:p-8"
     >
-      <motion.div variants={itemVariants} className="mb-8 text-center">
-        <h2 className="text-3xl font-bold mb-2 relative group">
-          <span className="absolute -inset-1 bg-gradient-to-r from-metallic-accent/20 via-metallic-accent/30 to-metallic-light/20 blur-xl opacity-75 group-hover:opacity-100 transition-all duration-500 animate-pulse"></span>
-          <span className="relative inline-block text-3xl font-bold mb-2 text-white">
-            Welcome Back
-          </span>
-        </h2>
-        <div className="text-white/80 flex flex-col items-center space-y-1">
-          <span className="relative group cursor-default">
-            <span className="absolute -inset-1 bg-gradient-to-r from-metallic-accent/20 to-metallic-accent/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-            <span className="relative inline-block animate-pulse">
-              Sign in to continue your journey
-            </span>
-          </span>
-          <span className="text-xs text-white/50 animate-pulse">
-            Enter your credentials to proceed
-          </span>
-          <div className="flex space-x-2 text-xs text-white/40">
-            <span className="animate-pulse">🔐</span>
-            <span className="animate-bounce">✨</span>
-            <span className="animate-pulse">🚀</span>
-          </div>
+      <motion.div variants={itemVariants} className="mb-7 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-metallic-accent/30 bg-metallic-accent/10">
+          <ShieldCheck className="h-7 w-7 text-metallic-accent" />
+        </div>
+        <h2 className="text-3xl font-bold text-white">Welcome back</h2>
+        <p className="mt-2 text-sm text-white/60">
+          Press Login to enter instantly. Email and password are optional locally.
+        </p>
+        <div className="mt-3 flex items-center justify-center gap-3 text-metallic-accent/80">
+          <Sparkles className="h-4 w-4" />
+          <Rocket className="h-4 w-4" />
+          <LockKeyhole className="h-4 w-4" />
         </div>
       </motion.div>
 
       {error && (
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+          role="alert"
+          className="mb-5 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300"
         >
           {error}
         </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <motion.div variants={itemVariants}>
           <FormInput
-            icon={<lucideReact.Mail className="text-white/60" size={18} />}
+            icon={<Mail className="text-white/60" size={18} />}
             type="email"
-            placeholder="Enter your email"
+            placeholder="Email (optional)"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
           />
         </motion.div>
 
         <motion.div variants={itemVariants} className="relative">
           <FormInput
-            icon={<lucideReact.Lock className="text-white/60" size={18} />}
+            icon={<LockKeyhole className="text-white/60" size={18} />}
             type={showPassword ? "text" : "password"}
-            placeholder="Enter your password"
+            placeholder="Password (optional)"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password"
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white focus:outline-none transition-colors"
-            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-white/60 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-metallic-accent"
+            onClick={() => setShowPassword((current) => !current)}
             aria-label={showPassword ? "Hide password" : "Show password"}
           >
-            {showPassword ? (
-              <lucideReact.EyeOff size={18} />
-            ) : (
-              <lucideReact.Eye size={18} />
-            )}
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </motion.div>
 
-        <motion.div
+        <motion.label
           variants={itemVariants}
-          className="flex items-center justify-between"
+          className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3 text-sm text-white/80"
         >
-          <div className="flex items-center space-x-2">
-            <div
-              onClick={() => setRemember(!remember)}
-              className="cursor-pointer"
-            >
-              <ToggleSwitch
-                checked={remember}
-                onChange={() => setRemember(!remember)}
-                id="remember-me"
-              />
-            </div>
-            <div className="flex flex-col">
-              <label
-                htmlFor="remember-me"
-                className="text-sm text-white/80 cursor-pointer hover:text-white transition-colors"
-                onClick={() => setRemember(!remember)}
-              >
-                Keep me signed in
-              </label>
-              <span className="text-xs text-white/50">
-                {remember
-                  ? "You'll stay signed in even after closing the browser"
-                  : "Sign out when you close the browser"}
-              </span>
-            </div>
-          </div>
-          {/* <a
-                        href="#"
-                        className="text-sm text-white/80 hover:text-white transition-colors"
-                    >
-                        Reset password
-                    </a> */}
-        </motion.div>
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(event) => setRemember(event.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-metallic-accent"
+          />
+          <span>
+            <span className="block font-medium">Keep me signed in</span>
+            <span className="mt-0.5 block text-xs text-white/45">
+              Save this local session in the browser.
+            </span>
+          </span>
+        </motion.label>
 
-        <motion.div variants={itemVariants}>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`w-full py-3 rounded-lg ${
-              isSuccess
-                ? "animate-success bg-green-500"
-                : "bg-metallic-accent hover:bg-metallic-accent/70"
-            } text-white font-medium transition-all duration-200 ease-in-out transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-metallic-accent focus:ring-opacity-50 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none shadow-lg shadow-metallic-accent/20 hover:shadow-metallic-accent/40`}
-          >
-            {isSubmitting
-              ? "Signing in..."
-              : isSuccess
-              ? "Welcome!"
-              : "Sign In"}
-          </button>
-        </motion.div>
+        <motion.button
+          variants={itemVariants}
+          type="submit"
+          disabled={isBusy}
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-metallic-accent py-3 font-medium text-white shadow-lg shadow-metallic-accent/20 transition hover:bg-metallic-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-metallic-accent disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting ? (
+            <LoaderCircle className="h-5 w-5 animate-spin" />
+          ) : (
+            <LogIn className="h-5 w-5" />
+          )}
+          {isSubmitting ? "Opening..." : "Login"}
+        </motion.button>
       </form>
 
-      <motion.div variants={itemVariants} className="mt-8">
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-white/10 absolute w-full"></div>
-          <div className="bg-transparent px-4 relative text-white/60 text-sm">
-            OR continue with
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 gap-5">
-          <HoverButton
-            onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading || isSubmitting}
-            className="text-sm flex items-center justify-center px-2 bg-metallic-accent/20 hover:bg-metallic-accent/30 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isGoogleLoading ? (
-              <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-            )}
-          </HoverButton>
-        </div>
+      <motion.div variants={itemVariants} className="my-6 flex items-center gap-3">
+        <span className="h-px flex-1 bg-white/10" />
+        <span className="text-xs uppercase tracking-wider text-white/40">or</span>
+        <span className="h-px flex-1 bg-white/10" />
       </motion.div>
+
+      <motion.button
+        variants={itemVariants}
+        type="button"
+        onClick={handleGuestLogin}
+        disabled={isBusy}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:border-metallic-accent/40 hover:bg-metallic-accent/10 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isGuestSubmitting ? (
+          <LoaderCircle className="h-4 w-4 animate-spin" />
+        ) : (
+          <UserRound className="h-4 w-4" />
+        )}
+        Continue as local player
+      </motion.button>
 
       <motion.p
         variants={itemVariants}
-        className="mt-8 text-center text-sm text-white/60"
+        className="mt-7 text-center text-sm text-white/60"
       >
-        New to our platform?{" "}
-        <a
+        Need a separate local profile?{" "}
+        <Link
           href="/sign-up"
-          className="font-medium text-white hover:text-metallic-accent transition-colors"
+          className="font-medium text-white transition hover:text-metallic-accent"
         >
           Create an account
-        </a>
+        </Link>
       </motion.p>
     </motion.div>
   );
 };
-
-// Export as default components
 
 export default LoginForm;

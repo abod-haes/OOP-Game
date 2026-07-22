@@ -1,51 +1,36 @@
 import React from "react";
+import { MapPinned } from "lucide-react";
 import Landing from "@/components/landing";
-
 import HomeEditor from "@/components/home-editor";
 import Map from "@/components/map/map";
 
-// Force dynamic rendering to prevent static generation issues
 export const dynamic = "force-dynamic";
 
 function Page() {
   return (
-    <main className=" ">
-      <div className="container pb-10 mx-auto grid grid-cols-1 gap-y-24 w-full h-full">
+    <main>
+      <div className="container mx-auto grid h-full w-full grid-cols-1 gap-y-24 pb-10">
         <Landing />
-
         <HomeEditor />
       </div>
-      <div className="px-10 mx-auto grid grid-cols-1 gap-y-24 w-full h-full py-32 overflow-hidden ">
-        {/* Map Section with Title and Description */}
-        <div className="text-center space-y-8">
+
+      <div className="mx-auto grid h-full w-full grid-cols-1 gap-y-24 overflow-hidden px-4 py-24 sm:px-10 sm:py-32">
+        <div className="space-y-8 text-center">
           <div className="space-y-4">
-            <h2 className="text-4xl md:text-6xl font-bold text-white animate-glow">
-              🗺️ Adventure Map
-            </h2>
-            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Embark on your coding journey! Each level presents unique
-              programming challenges that will test your skills and help you
-              master the art of software development.
-              <span className="text-metallic-accent font-semibold">
-                {" "}
-                Click on any level
+            <div className="flex items-center justify-center gap-3">
+              <MapPinned className="h-10 w-10 text-metallic-accent md:h-14 md:w-14" />
+              <h2 className="text-4xl font-bold text-white animate-glow md:text-6xl">
+                Adventure Map
+              </h2>
+            </div>
+            <p className="mx-auto max-w-3xl text-lg leading-relaxed text-gray-300 md:text-xl">
+              Embark on your coding journey. Each level presents a focused OOP
+              challenge that improves your skills step by step.
+              <span className="font-semibold text-metallic-accent">
+                {" "}Choose an available section
               </span>{" "}
-              to begin your adventure.
+              to begin.
             </p>
-            {/* <div className="flex justify-center gap-4 text-sm text-gray-400">
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-metallic-accent rounded-full animate-pulse"></div>
-                                <span>Available Levels</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                <span>Completed</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                                <span>Locked</span>
-                            </div>
-                        </div> */}
           </div>
         </div>
         <Map />
