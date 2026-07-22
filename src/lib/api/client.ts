@@ -1,4 +1,11 @@
-import { BASE_URL } from "@/app/api-services";
+import {
+  DEFAULT_LOCAL_USER,
+  LOCAL_LEVELS,
+  LOCAL_SECTIONS,
+  LOCAL_STORAGE_KEYS,
+  getLocalLevelById,
+  validateLocalLevelCode,
+} from "@/data/data";
 
 export interface CompilationResult {
   success: boolean;
@@ -6,7 +13,6 @@ export interface CompilationResult {
   error?: string;
 }
 
-// Authentication interfaces
 export interface SignUpRequest {
   firstName: string;
   lastName: string;
@@ -43,7 +49,6 @@ export interface ApiResponse<T = unknown> {
   error?: string | string[];
 }
 
-// New interfaces for token refresh
 export interface RefreshTokenRequest {
   refreshToken: string;
 }
@@ -53,7 +58,6 @@ export interface RefreshTokenResponse {
   refreshToken: string;
 }
 
-// User API interfaces
 export interface UserProfile {
   id: string;
   createdAt: string;
@@ -78,7 +82,6 @@ export interface UpdateUserRequest {
   fcmToken?: string;
 }
 
-// Level interfaces
 export interface UserLevel {
   id: string;
   updatedAt: string;
@@ -107,6 +110,14 @@ export interface Level {
   previousCode: string | null;
 }
 
+export interface Section {
+  id: string;
+  updatedAt: string | null;
+  deletedAt: string | null;
+  sectionNumber: number;
+  description: string;
+}
+
 export interface LevelGetAllParams {
   SectionId?: string;
   LevelNumber?: number;
@@ -128,756 +139,593 @@ export interface LevelGetAllResponse {
   previousPage: number | null;
 }
 
-const AUTH_BASE_URL = "https://roborescue.somee.com/api/authentication";
+interface StoredUser extends UserProfile {
+  password: string;
+}
 
-// const generateHash = async (str: string): Promise<string> => {
-//   const encoder = new TextEncoder();
-//   const data = encoder.encode(str);
-//   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-//   const hashArray = Array.from(new Uint8Array(hashBuffer));
-//   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-// };
+type ProgressStore = Record<string, string[]>;
 
-// const decodeJWT = async (token: string): Promise<{ userId?: string }> => {
-//   try {
-//     // Check if this is a JWT token (has 3 parts separated by dots)
-//     const parts = token.split(".");
-//     if (parts.length === 3) {
-//       // This is a JWT token
-//       const base64Url = parts[1];
-//       const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-//       const jsonPayload = decodeURIComponent(
-//         atob(base64)
-//           .split("")
-//           .map(function (c) {
-//             return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-//           })
-//           .join("")
-//       );
+const isBrowser = () => typeof window !== "undefined";
 
-//       const payload = JSON.parse(jsonPayload);
+function createId(prefix: string): string {
+  if (isBrowser() && typeof crypto !== "undefined" && crypto.randomUUID) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
-//       // Try multiple possible field names for user ID
-//       const userId =
-//         payload.userId ||
-//         payload.sub ||
-//         payload.id ||
-//         payload.Id ||
-//         payload.user_id ||
-//         payload.userid;
+function readUsers(): StoredUser[] {
+  if (!isBrowser()) return [{ ...DEFAULT_LOCAL_USER }];
 
-//       return {
-//         userId: userId,
-//       };
-//     } else {
-//       // This is not a JWT token (opaque token)
-//       // For opaque tokens, we need to extract user ID differently
-//       try {
-//         // Try to decode as base64
-//         const decoded = atob(token);
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.users);
+    if (!raw) {
+      const seeded = [{ ...DEFAULT_LOCAL_USER }];
+      localStorage.setItem(LOCAL_STORAGE_KEYS.users, JSON.stringify(seeded));
+      return seeded;
+    }
 
-//         // Look for user ID patterns in the decoded token
-//         const userIdMatch = decoded.match(/(\d{15,})/); // Look for long numbers (likely user IDs)
-//         if (userIdMatch) {
-//           const userId = userIdMatch[1];
-//           return { userId };
-//         }
-//       } catch {
-//         // Token is not base64 encoded
-//       }
+    const parsed = JSON.parse(raw) as StoredUser[];
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      return [{ ...DEFAULT_LOCAL_USER }];
+    }
+    return parsed;
+  } catch {
+    return [{ ...DEFAULT_LOCAL_USER }];
+  }
+}
 
-//       // Try to extract user ID from the token string itself
-//       const userIdMatch = token.match(/(\d{15,})/); // Look for long numbers
-//       if (userIdMatch) {
-//         const userId = userIdMatch[1];
-//         return { userId };
-//       }
+function writeUsers(users: StoredUser[]): void {
+  if (!isBrowser()) return;
+  localStorage.setItem(LOCAL_STORAGE_KEYS.users, JSON.stringify(users));
+}
 
-//       // Generate a user ID from the token hash
-//       const tokenHash = await generateHash(token);
-//       const generatedUserId = tokenHash.substring(0, 20); // Take first 20 characters
-//       return { userId: generatedUserId };
-//     }
-//   } catch (error) {
-//     console.error("Error decoding token:", error);
-//     return {};
-//   }
-// };
+function readProgress(): ProgressStore {
+  if (!isBrowser()) return {};
+
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEYS.progress);
+    return raw ? (JSON.parse(raw) as ProgressStore) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeProgress(progress: ProgressStore): void {
+  if (!isBrowser()) return;
+  localStorage.setItem(LOCAL_STORAGE_KEYS.progress, JSON.stringify(progress));
+}
+
+function createTokens(userId: string): AuthResponse {
+  const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return {
+    accessToken: `local-access-${userId}-${nonce}`,
+    refreshToken: `local-refresh-${userId}-${nonce}`,
+    userId,
+  };
+}
+
+function profileFromEmail(email: string, password: string): StoredUser {
+  const normalizedEmail = email.trim().toLowerCase();
+  const namePart = normalizedEmail.split("@")[0] || "player";
+  const displayName = namePart.replace(/[._-]+/g, " ").trim() || "player";
+  const firstName = displayName
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+
+  const now = new Date().toISOString();
+  return {
+    id: createId("local-user"),
+    createdAt: now,
+    updatedAt: now,
+    firstName,
+    lastName: "Player",
+    birthDate: "",
+    userName: namePart,
+    password,
+    email: normalizedEmail,
+    fcmToken: "",
+  };
+}
 
 export const sessionUtils = {
-  setTokens: async (tokens: AuthResponse, rememberMe: boolean = false) => {
-    const storage = rememberMe ? localStorage : sessionStorage;
+  setTokens: async (
+    tokens: AuthResponse,
+    rememberMe: boolean = false
+  ): Promise<void> => {
+    if (!isBrowser()) return;
 
-    storage.setItem("accessToken", tokens.accessToken);
-    storage.setItem("refreshToken", tokens.refreshToken);
-    storage.setItem("rememberMe", rememberMe.toString());
-    console.log("Setting tokens:", tokens);
-    if (tokens.userId) {
-      storage.setItem("userId", tokens.userId);
-      console.log("Stored userId:", tokens.userId);
-    }
-  },
-
-  getTokens: (): AuthResponse | null => {
-    // Check localStorage first (for "remember me" users)
-    let accessToken = localStorage.getItem("accessToken");
-    let refreshToken = localStorage.getItem("refreshToken");
-    let userId = localStorage.getItem("userId");
-
-    // If not in localStorage, check sessionStorage
-    if (!accessToken || !refreshToken) {
-      accessToken = sessionStorage.getItem("accessToken");
-      refreshToken = sessionStorage.getItem("refreshToken");
-      userId = sessionStorage.getItem("userId");
-    }
-
-    if (accessToken && refreshToken) {
-      return { accessToken, refreshToken, userId: userId || undefined };
-    }
-    return null;
-  },
-
-  clearTokens: () => {
-    // Clear from both storages to be safe
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("refreshToken");
     sessionStorage.removeItem("userId");
     sessionStorage.removeItem("rememberMe");
-
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userId");
     localStorage.removeItem("rememberMe");
+
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem("accessToken", tokens.accessToken);
+    storage.setItem("refreshToken", tokens.refreshToken);
+    storage.setItem("rememberMe", rememberMe.toString());
+
+    if (tokens.userId) {
+      storage.setItem("userId", tokens.userId);
+    }
+  },
+
+  getTokens: (): AuthResponse | null => {
+    if (!isBrowser()) return null;
+
+    const readFrom = (storage: Storage): AuthResponse | null => {
+      const accessToken = storage.getItem("accessToken");
+      const refreshToken = storage.getItem("refreshToken");
+      const userId = storage.getItem("userId") || undefined;
+
+      return accessToken && refreshToken
+        ? { accessToken, refreshToken, userId }
+        : null;
+    };
+
+    return readFrom(localStorage) || readFrom(sessionStorage);
+  },
+
+  clearTokens: (): void => {
+    if (!isBrowser()) return;
+
+    [sessionStorage, localStorage].forEach((storage) => {
+      storage.removeItem("accessToken");
+      storage.removeItem("refreshToken");
+      storage.removeItem("userId");
+      storage.removeItem("rememberMe");
+    });
   },
 
   getUserId: (): string | null => {
-    // Check localStorage first, then sessionStorage
+    if (!isBrowser()) return null;
     return localStorage.getItem("userId") || sessionStorage.getItem("userId");
   },
 
-  isAuthenticated: (): boolean => {
-    return sessionUtils.getTokens() !== null;
-  },
+  isAuthenticated: (): boolean => sessionUtils.getTokens() !== null,
 
-  isRememberMeEnabled: (): boolean => {
-    return localStorage.getItem("rememberMe") === "true";
-  },
+  isRememberMeEnabled: (): boolean =>
+    isBrowser() && localStorage.getItem("rememberMe") === "true",
 
-  // New method to refresh tokens
   refreshTokens: async (): Promise<boolean> => {
-    try {
-      const tokens = sessionUtils.getTokens();
-      if (!tokens?.refreshToken) {
-        return false;
-      }
+    const tokens = sessionUtils.getTokens();
+    if (!tokens?.userId) return false;
 
-      const response = await fetch(BASE_URL + "/authentication/refreshToken", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refreshToken: tokens.refreshToken,
-        }),
-      });
-
-      if (!response.ok) {
-        sessionUtils.clearTokens();
-        return false;
-      }
-
-      const newTokens: RefreshTokenResponse = await response.json();
-      await sessionUtils.setTokens(newTokens);
-      return true;
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      sessionUtils.clearTokens();
-      return false;
-    }
+    const rememberMe = sessionUtils.isRememberMeEnabled();
+    await sessionUtils.setTokens(createTokens(tokens.userId), rememberMe);
+    return true;
   },
 };
 
-// Token refresh state management
-let isRefreshingToken = false;
-let failedRequestQueue: Array<{
-  resolve: (value: Response) => void;
-  reject: (reason?: unknown) => void;
-  requestInfo: RequestInfo;
-  requestInit?: RequestInit;
-}> = [];
-
-// Protected API client with automatic token refresh
 export class ProtectedApiClient {
   private static async makeRequest(
-    url: RequestInfo,
+    url: RequestInfo | URL,
     options: RequestInit = {}
   ): Promise<Response> {
     const tokens = sessionUtils.getTokens();
+    const headers = new Headers(options.headers);
 
-    // Add authorization header if tokens exist
     if (tokens?.accessToken) {
-      options.headers = {
-        ...options.headers,
-        Authorization: `Bearer ${tokens.accessToken}`,
-      };
+      headers.set("Authorization", `Bearer ${tokens.accessToken}`);
     }
 
-    let response = await fetch(url, options);
-
-    // Handle token expiration
-    if (response.status === 401 || response.status === 403) {
-      // If already refreshing, queue the request
-      if (isRefreshingToken) {
-        return new Promise((resolve, reject) => {
-          failedRequestQueue.push({
-            resolve,
-            reject,
-            requestInfo: url,
-            requestInit: options,
-          });
-        });
-      }
-
-      // Attempt to refresh token
-      isRefreshingToken = true;
-      const refreshSuccess = await sessionUtils.refreshTokens();
-
-      if (refreshSuccess) {
-        // Retry original request with new token
-        const newTokens = sessionUtils.getTokens();
-        if (newTokens?.accessToken) {
-          options.headers = {
-            ...options.headers,
-            Authorization: `Bearer ${newTokens.accessToken}`,
-          };
-          response = await fetch(url, options);
-
-          // Process queued requests
-          const queuedRequests = failedRequestQueue.splice(0);
-          queuedRequests.forEach(async (queuedRequest) => {
-            try {
-              const newOptions = {
-                ...queuedRequest.requestInit,
-                headers: {
-                  ...queuedRequest.requestInit?.headers,
-                  Authorization: `Bearer ${newTokens.accessToken}`,
-                },
-              };
-              const retryResponse = await fetch(
-                queuedRequest.requestInfo,
-                newOptions
-              );
-              queuedRequest.resolve(retryResponse);
-            } catch (error) {
-              queuedRequest.reject(error);
-            }
-          });
-        }
-      } else {
-        // Refresh failed, redirect to login
-        failedRequestQueue.forEach((queuedRequest) => {
-          queuedRequest.reject(new Error("Token refresh failed"));
-        });
-        failedRequestQueue = [];
-
-        // Redirect to login page
-        if (typeof window !== "undefined") {
-          window.location.href = "/sign-in";
-        }
-      }
-
-      isRefreshingToken = false;
-    }
-
-    return response;
+    return fetch(url, { ...options, headers });
   }
 
-  static async get(url: string, options: RequestInit = {}): Promise<Response> {
+  static get(url: string, options: RequestInit = {}): Promise<Response> {
     return this.makeRequest(url, { ...options, method: "GET" });
   }
 
-  static async post(
+  static post(
     url: string,
     data?: unknown,
     options: RequestInit = {}
   ): Promise<Response> {
-    const requestOptions: RequestInit = {
+    const headers = new Headers(options.headers);
+    let body: BodyInit | undefined;
+
+    if (data instanceof FormData) {
+      body = data;
+    } else if (data !== undefined) {
+      headers.set("Content-Type", "application/json");
+      body = JSON.stringify(data);
+    }
+
+    return this.makeRequest(url, {
       ...options,
       method: "POST",
-    };
-
-    if (data) {
-      if (data instanceof FormData) {
-        // Don't set Content-Type for FormData, let browser set it
-        requestOptions.body = data;
-        requestOptions.headers = {
-          ...options.headers,
-        };
-      } else {
-        // For JSON data
-        requestOptions.headers = {
-          "Content-Type": "application/json",
-          ...options.headers,
-        };
-        requestOptions.body = JSON.stringify(data);
-      }
-    } else {
-      requestOptions.headers = {
-        "Content-Type": "application/json",
-        ...options.headers,
-      };
-    }
-
-    return this.makeRequest(url, requestOptions);
+      headers,
+      body,
+    });
   }
 
-  static async put(
+  static put(
     url: string,
     data?: unknown,
     options: RequestInit = {}
   ): Promise<Response> {
-    const requestOptions: RequestInit = {
+    const headers = new Headers(options.headers);
+    headers.set("Content-Type", "application/json");
+
+    return this.makeRequest(url, {
       ...options,
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    };
-
-    if (data) {
-      requestOptions.body = JSON.stringify(data);
-    }
-
-    return this.makeRequest(url, requestOptions);
+      headers,
+      body: data === undefined ? undefined : JSON.stringify(data),
+    });
   }
 
-  static async delete(
-    url: string,
-    options: RequestInit = {}
-  ): Promise<Response> {
+  static delete(url: string, options: RequestInit = {}): Promise<Response> {
     return this.makeRequest(url, { ...options, method: "DELETE" });
   }
 }
 
-// Helper function to handle API responses
 export async function handleApiResponse<T>(
   response: Response
 ): Promise<ApiResponse<T>> {
   try {
     if (!response.ok) {
-      // Try to parse as JSON first, fallback to text
-      let errorData: string | string[];
       const contentType = response.headers.get("content-type");
+      const error = contentType?.includes("application/json")
+        ? JSON.stringify(await response.json())
+        : await response.text();
 
-      if (contentType && contentType.includes("application/json")) {
-        try {
-          errorData = await response.json();
-        } catch {
-          // If JSON parsing fails, fallback to text
-          errorData = await response.text();
-        }
-      } else {
-        errorData = await response.text();
-      }
-
-      return {
-        success: false,
-        error: errorData,
-      };
+      return { success: false, error };
     }
 
-    const data: T = await response.json();
-    return {
-      success: true,
-      data,
-    };
+    return { success: true, data: (await response.json()) as T };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
     return {
       success: false,
-      error: errorMessage,
+      error: error instanceof Error ? error.message : "Unknown local API error",
     };
   }
 }
 
-// Authentication API service
 export async function signUp(
   userData: SignUpRequest,
   rememberMe: boolean = false
 ): Promise<ApiResponse<AuthResponse>> {
-  try {
-    const response = await fetch(`${AUTH_BASE_URL}/signup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(userData),
-    });
+  const email = userData.email.trim().toLowerCase();
+  const users = readUsers();
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `HTTP error! status: ${response.status}, message: ${errorText}`
-      );
-    }
-
-    const tokens: AuthResponse = await response.json();
-
-    // Store tokens in session or localStorage based on rememberMe
-    await sessionUtils.setTokens(tokens, rememberMe);
-
-    return {
-      success: true,
-      data: tokens,
-    };
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "An unknown error occurred during signup";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+  if (users.some((user) => user.email.toLowerCase() === email)) {
+    return { success: false, error: "An account with this email already exists." };
   }
+
+  const now = new Date().toISOString();
+  const user: StoredUser = {
+    id: createId("local-user"),
+    createdAt: now,
+    updatedAt: now,
+    firstName: userData.firstName.trim(),
+    lastName: userData.lastName.trim(),
+    birthDate: "",
+    userName: userData.userName.trim(),
+    password: userData.password,
+    email,
+    fcmToken: "",
+  };
+
+  writeUsers([...users, user]);
+  const tokens = createTokens(user.id);
+  await sessionUtils.setTokens(tokens, rememberMe);
+
+  return { success: true, data: tokens };
 }
 
 export async function signIn(
   credentials: SignInRequest,
   rememberMe: boolean = false
 ): Promise<ApiResponse<AuthResponse>> {
-  try {
-    const response = await fetch(`${AUTH_BASE_URL}/signin`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    });
+  const email = credentials.email.trim().toLowerCase();
+  const users = readUsers();
+  let user = users.find((item) => item.email.toLowerCase() === email);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `HTTP error! status: ${response.status}, message: ${errorText}`
-      );
-    }
-
-    const tokens: AuthResponse = await response.json();
-
-    // Store tokens in session or localStorage based on rememberMe
-    await sessionUtils.setTokens(tokens, rememberMe);
-
-    return {
-      success: true,
-      data: tokens,
-    };
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "An unknown error occurred during signin";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+  if (user && user.password !== credentials.password) {
+    return { success: false, error: "Incorrect password." };
   }
+
+  if (!user) {
+    user = profileFromEmail(email, credentials.password);
+    users.push(user);
+    writeUsers(users);
+  }
+
+  const tokens = createTokens(user.id);
+  await sessionUtils.setTokens(tokens, rememberMe);
+  return { success: true, data: tokens };
 }
 
 export async function activateEmail(
   activationData: EmailActivationRequest,
   rememberMe: boolean = false
 ): Promise<ApiResponse<EmailActivationResponse>> {
-  try {
-    const response = await fetch(`/api/authentication/activeEmail`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(activationData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const tokens: EmailActivationResponse = await response.json();
-
-    // Store tokens in session or localStorage based on rememberMe
-    await sessionUtils.setTokens(tokens, rememberMe);
-
-    return {
-      success: true,
-      data: tokens,
-    };
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "An unknown error occurred during email activation";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+  if (activationData.token.trim().length !== 8) {
+    return { success: false, error: "Activation token must be 8 characters." };
   }
+
+  const users = readUsers();
+  const user = users.find(
+    (item) =>
+      item.email.toLowerCase() === activationData.email.trim().toLowerCase()
+  );
+
+  if (!user) {
+    return { success: false, error: "Local account not found." };
+  }
+
+  const tokens = createTokens(user.id);
+  await sessionUtils.setTokens(tokens, rememberMe);
+
+  return {
+    success: true,
+    data: {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+    },
+  };
 }
 
-// Google Sign-In functions
 export async function getGoogleSignInUrl(): Promise<
   ApiResponse<{ url: string }>
 > {
-  try {
-    const response = await fetch("/api/externalProviders/GoogleSignInUrl", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
-      );
-    }
-
-    const data = await response.json();
-
-    return {
-      success: true,
-      data: data,
-    };
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "An unknown error occurred while getting Google sign-in URL";
-    return {
-      success: false,
-      error: errorMessage,
-    };
-  }
+  return { success: true, data: { url: "/" } };
 }
 
 export async function signInWithGoogle(): Promise<void> {
-  try {
-    const result = await getGoogleSignInUrl();
+  const users = readUsers();
+  let user = users.find((item) => item.id === "local-google-user");
 
-    if (result.success && result.data) {
-      // Redirect to Google OAuth
-      window.location.href = result.data.url;
-    } else {
-      const errorMessage = Array.isArray(result.error)
-        ? result.error.join(", ")
-        : result.error || "Failed to get Google sign-in URL";
-      throw new Error(errorMessage);
-    }
-  } catch (error) {
-    console.error("Google sign-in error:", error);
-    throw error;
+  if (!user) {
+    const now = new Date().toISOString();
+    user = {
+      id: "local-google-user",
+      createdAt: now,
+      updatedAt: now,
+      firstName: "Google",
+      lastName: "Player",
+      birthDate: "",
+      userName: "google-player",
+      password: "",
+      email: "google-player@roborescue.local",
+      fcmToken: "",
+    };
+    writeUsers([...users, user]);
+  }
+
+  await sessionUtils.setTokens(createTokens(user.id), true);
+
+  if (isBrowser()) {
+    window.location.href = "/";
   }
 }
 
-// Updated compileJava function with protected API client
 export async function compileJava(code: string): Promise<CompilationResult> {
   try {
     const formData = new FormData();
     formData.append("code", code);
 
-    const response = await ProtectedApiClient.post(
-      `${BASE_URL}/compile`,
-      formData
-    );
+    const response = await fetch("/api/compile", {
+      method: "POST",
+      body: formData,
+    });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+    return (await response.json()) as CompilationResult;
+  } catch (error) {
     return {
       success: false,
-      error: errorMessage,
+      error: error instanceof Error ? error.message : "Compilation failed",
     };
   }
 }
 
-// Example protected API functions - add more as needed
-export async function getProfile(): Promise<ApiResponse<unknown>> {
-  try {
-    const response = await ProtectedApiClient.get("/api/profile");
-    return await handleApiResponse(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
-  }
+export async function getProfile(): Promise<ApiResponse<UserProfile>> {
+  const userId = sessionUtils.getUserId();
+  return userId
+    ? getUserById(userId)
+    : { success: false, error: "User is not signed in." };
 }
 
 export async function checkCode(
   userId: string,
   levelId: string,
   code: string
-): Promise<ApiResponse<unknown>> {
-  try {
-    const response = await fetch("/api/checkCode", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId,
-        levelId,
-        code,
-      }),
-    });
-    return await handleApiResponse(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+): Promise<ApiResponse<boolean>> {
+  const validation = validateLocalLevelCode(levelId, code);
+
+  if (!validation.success) {
+    return { success: false, error: validation.errors };
   }
+
+  const progress = readProgress();
+  const completed = new Set(progress[userId] || []);
+  completed.add(levelId);
+  progress[userId] = Array.from(completed);
+  writeProgress(progress);
+
+  return { success: true, data: true };
 }
 
 export async function updateProfile(
   profileData: unknown
-): Promise<ApiResponse<unknown>> {
-  try {
-    const response = await ProtectedApiClient.put("/api/profile", profileData);
-    return await handleApiResponse(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+): Promise<ApiResponse<boolean>> {
+  if (!profileData || typeof profileData !== "object") {
+    return { success: false, error: "Invalid profile data." };
   }
+  return updateUser(profileData as UpdateUserRequest);
 }
 
-// User API functions
 export async function getUserById(
   userId: string
 ): Promise<ApiResponse<UserProfile>> {
-  try {
-    const response = await ProtectedApiClient.get(
-      `${BASE_URL}/user/getUserById/${userId}`
-    );
-    return await handleApiResponse<UserProfile>(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
-  }
+  const user = readUsers().find((item) => item.id === userId);
+
+  return user
+    ? { success: true, data: { ...user } }
+    : { success: false, error: "Local user not found." };
 }
 
 export async function updateUser(
   userData: UpdateUserRequest
 ): Promise<ApiResponse<boolean>> {
-  try {
-    // Create a copy of userData without fcmToken if it's not provided
-    const { fcmToken, ...updateData } = userData;
-    const requestData = fcmToken ? userData : { ...updateData, fcmToken: "" };
+  const users = readUsers();
+  const index = users.findIndex((user) => user.id === userData.userId);
 
-    const response = await ProtectedApiClient.post(
-      `${BASE_URL}/user/update`,
-      requestData
-    );
-    return await handleApiResponse<boolean>(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+  if (index < 0) {
+    return { success: false, error: "Local user not found." };
   }
+
+  users[index] = {
+    ...users[index],
+    ...userData,
+    updatedAt: new Date().toISOString(),
+    fcmToken: userData.fcmToken ?? users[index].fcmToken,
+  };
+  writeUsers(users);
+
+  return { success: true, data: true };
 }
 
-// Level API functions
 export async function getUserLastLevels(
   userId: string
 ): Promise<ApiResponse<UserLevel[]>> {
-  try {
-    const response = await ProtectedApiClient.get(
-      `${BASE_URL}/level/getUserLastLevels?UserId=${userId}`
-    );
-    return await handleApiResponse<UserLevel[]>(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
-  }
+  const completedIds = readProgress()[userId] || [];
+  const now = new Date().toISOString();
+
+  const completedLevels = completedIds
+    .map((levelId) => getLocalLevelById(levelId))
+    .filter((level): level is NonNullable<typeof level> => Boolean(level))
+    .map<UserLevel>((level) => ({
+      id: level.id,
+      updatedAt: now,
+      deletedAt: null,
+      name: level.name,
+      levelNumber: level.levelNumber,
+      sectionId: level.sectionId,
+      codeAnalyzerId: level.codeAnalyzerId,
+      description: level.description,
+      task: level.task,
+      successMessage: level.successMessage,
+      previousCode: level.previousCode,
+    }))
+    .sort((a, b) => {
+      const sectionA =
+        LOCAL_SECTIONS.find((section) => section.id === a.sectionId)
+          ?.sectionNumber ?? 0;
+      const sectionB =
+        LOCAL_SECTIONS.find((section) => section.id === b.sectionId)
+          ?.sectionNumber ?? 0;
+      return sectionA - sectionB || a.levelNumber - b.levelNumber;
+    });
+
+  return { success: true, data: completedLevels };
 }
 
 export async function getAllLevels(
   params: LevelGetAllParams = {}
 ): Promise<ApiResponse<LevelGetAllResponse>> {
-  try {
-    // Build query string from parameters
-    const queryParams = new URLSearchParams();
+  let levels: Level[] = LOCAL_LEVELS.map((level) => ({
+    id: level.id,
+    updatedAt: level.updatedAt,
+    deletedAt: level.deletedAt,
+    name: level.name,
+    levelNumber: level.levelNumber,
+    sectionId: level.sectionId,
+    codeAnalyzerId: level.codeAnalyzerId,
+    description: level.description,
+    task: level.task,
+    successMessage: level.successMessage,
+    previousCode: level.previousCode,
+  }));
 
-    if (params.SectionId) queryParams.append("SectionId", params.SectionId);
-    if (params.LevelNumber !== undefined)
-      queryParams.append("LevelNumber", params.LevelNumber.toString());
-    if (params.PageNumber !== undefined)
-      queryParams.append("PageNumber", params.PageNumber.toString());
-    if (params.PageSize !== undefined)
-      queryParams.append("PageSize", params.PageSize.toString());
-    if (params.Asc !== undefined)
-      queryParams.append("Asc", params.Asc.toString());
-    if (params.StartDate) queryParams.append("StartDate", params.StartDate);
-    if (params.EndDate) queryParams.append("EndDate", params.EndDate);
-    if (params.Keyword) queryParams.append("Keyword", params.Keyword);
-
-    const queryString = queryParams.toString();
-    const url = queryString
-      ? `${BASE_URL}/level/getAll?${queryString}`
-      : `${BASE_URL}/level/getAll`;
-
-    const response = await ProtectedApiClient.get(url);
-    return await handleApiResponse<LevelGetAllResponse>(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+  if (params.SectionId) {
+    levels = levels.filter((level) => level.sectionId === params.SectionId);
   }
+
+  if (params.LevelNumber !== undefined) {
+    levels = levels.filter(
+      (level) => level.levelNumber === params.LevelNumber
+    );
+  }
+
+  if (params.Keyword?.trim()) {
+    const keyword = params.Keyword.trim().toLowerCase();
+    levels = levels.filter((level) =>
+      [level.name, level.description, level.task].some((value) =>
+        value.toLowerCase().includes(keyword)
+      )
+    );
+  }
+
+  levels.sort((a, b) => {
+    const sectionA =
+      LOCAL_SECTIONS.find((section) => section.id === a.sectionId)
+        ?.sectionNumber ?? 0;
+    const sectionB =
+      LOCAL_SECTIONS.find((section) => section.id === b.sectionId)
+        ?.sectionNumber ?? 0;
+    const order = sectionA - sectionB || a.levelNumber - b.levelNumber;
+    return params.Asc === false ? -order : order;
+  });
+
+  const pageNumber = Math.max(1, params.PageNumber ?? 1);
+  const pageSize = Math.max(1, params.PageSize ?? 50);
+  const totalCount = levels.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const start = (pageNumber - 1) * pageSize;
+  const data = levels.slice(start, start + pageSize);
+
+  return {
+    success: true,
+    data: {
+      data,
+      totalCount,
+      pageSize,
+      pageNumber,
+      totalPages,
+      nextPage: pageNumber < totalPages ? pageNumber + 1 : null,
+      previousPage: pageNumber > 1 ? pageNumber - 1 : null,
+    },
+  };
 }
 
 export async function getLevelById(
   levelId: string
 ): Promise<ApiResponse<Level>> {
-  try {
-    const url = `${BASE_URL}/level/getLevelById?LevelId=${levelId}`;
-    const response = await ProtectedApiClient.get(url);
-    return await handleApiResponse<Level>(response);
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    return {
-      success: false,
-      error: errorMessage,
-    };
+  const level = getLocalLevelById(levelId);
+
+  if (!level) {
+    return { success: false, error: "Level not found." };
   }
+
+  return {
+    success: true,
+    data: {
+      id: level.id,
+      updatedAt: level.updatedAt,
+      deletedAt: level.deletedAt,
+      name: level.name,
+      levelNumber: level.levelNumber,
+      sectionId: level.sectionId,
+      codeAnalyzerId: level.codeAnalyzerId,
+      description: level.description,
+      task: level.task,
+      successMessage: level.successMessage,
+      previousCode: level.previousCode,
+    },
+  };
+}
+
+export async function getAllSections(): Promise<ApiResponse<Section[]>> {
+  return {
+    success: true,
+    data: LOCAL_SECTIONS.map((section) => ({ ...section })),
+  };
 }

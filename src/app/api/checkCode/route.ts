@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
+import { validateLocalLevelCode } from "@/data/data";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { userId, levelId, code } = body;
 
-    // Validate required parameters
     if (!userId || !levelId || !code) {
       return NextResponse.json(
         {
@@ -17,41 +17,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Send request to external API
-    const response = await fetch(
-      "https://roborescue.somee.com/api/checkCode/checkCode",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          levelId,
-          code,
-        }),
-      }
-    );
+    const validation = validateLocalLevelCode(levelId, code);
 
-    if (!response.ok) {
-      const errorData = await response.json();
+    if (!validation.success) {
       return NextResponse.json(
-        {
-          success: false,
-          error: errorData, // Return the error data directly (could be array or object)
-        },
-        { status: response.status }
+        { success: false, error: validation.errors },
+        { status: 400 }
       );
     }
 
-    const result = await response.json();
-    return NextResponse.json({ success: true, data: result });
-  } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ success: true, data: true });
+  } catch (error) {
     return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Invalid request",
+      },
+      { status: 400 }
     );
   }
 }
