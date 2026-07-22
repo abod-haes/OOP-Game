@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BASE_URL = "https://roborescue.somee.com/api/authentication";
-
 export interface EmailActivationRequest {
   email: string;
   token: string;
@@ -30,34 +28,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Call the external API
-    const response = await fetch(`${BASE_URL}/activeEmail`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: body.email,
-        token: body.token,
-      }),
-    });
+    const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const result: EmailActivationResponse = {
+      accessToken: `local-access-${suffix}`,
+      refreshToken: `local-refresh-${suffix}`,
+    };
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return NextResponse.json(
-        { error: `Activation failed: ${errorText}` },
-        { status: response.status }
-      );
-    }
-
-    const result: EmailActivationResponse = await response.json();
-
-    return NextResponse.json(result, { status: 200 });
-  } catch (error) {
-    console.error("Email activation error:", error);
+    return NextResponse.json(result);
+  } catch {
     return NextResponse.json(
-      { error: "Internal server error during email activation" },
-      { status: 500 }
+      { error: "Invalid activation request" },
+      { status: 400 }
     );
   }
 }
